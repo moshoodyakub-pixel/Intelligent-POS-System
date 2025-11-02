@@ -1,0 +1,61 @@
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from datetime import datetime
+
+Base = declarative_base()
+
+class Vendor(Base):
+    __tablename__ = "vendors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    phone = Column(String)
+    address = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    products = relationship("Product", back_populates="vendor")
+    transactions = relationship("Transaction", back_populates="vendor")
+
+
+class Product(Base):
+    __tablename__ = "products"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    description = Column(String)
+    price = Column(Float)
+    quantity = Column(Integer)
+    vendor_id = Column(Integer, ForeignKey("vendors.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    vendor = relationship("Vendor", back_populates="products")
+    transactions = relationship("Transaction", back_populates="product")
+    forecasts = relationship("SalesForecast", back_populates="product")
+
+
+class Transaction(Base):
+    __tablename__ = "transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    vendor_id = Column(Integer, ForeignKey("vendors.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+    quantity = Column(Integer)
+    total_price = Column(Float)
+    transaction_date = Column(DateTime, default=datetime.utcnow)
+    
+    vendor = relationship("Vendor", back_populates="transactions")
+    product = relationship("Product", back_populates="transactions")
+
+
+class SalesForecast(Base):
+    __tablename__ = "sales_forecasts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    forecasted_quantity = Column(Integer)
+    forecasted_price = Column(Float)
+    forecast_date = Column(DateTime, default=datetime.utcnow)
+    
+    product = relationship("Product", back_populates="forecasts")
