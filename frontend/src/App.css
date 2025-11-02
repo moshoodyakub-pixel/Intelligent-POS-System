@@ -1,0 +1,210 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f5f5;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 250px;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  overflow-y: auto;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar.closed {
+  width: 80px;
+}
+
+.sidebar-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h2 {
+  font-size: 1.3em;
+  margin: 0;
+}
+
+.toggle-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: background 0.3s ease;
+}
+
+.toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.nav-menu {
+  list-style: none;
+  flex: 1;
+  padding: 20px 0;
+}
+
+.nav-menu li {
+  margin: 10px 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  color: white;
+  text-decoration: none;
+  padding: 15px 20px;
+  transition: background 0.3s ease;
+  gap: 15px;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.nav-link .icon {
+  font-size: 1.5em;
+  min-width: 30px;
+}
+
+.nav-link .label {
+  white-space: nowrap;
+}
+
+.sidebar.closed .nav-link .label {
+  display: none;
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+  font-size: 0.9em;
+}
+
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-header {
+  background: white;
+  padding: 20px 30px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.app-header h1 {
+  color: #333;
+  font-size: 1.8em;
+  margin: 0;
+}
+
+.header-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.header-info span {
+  color: #666;
+  font-size: 0.95em;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f5f5f5;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 60px;
+  }
+
+  .sidebar.closed {
+    width: 100%;
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+    overflow-x: auto;
+  }
+
+  .nav-menu li {
+    margin: 0;
+  }
+
+  .nav-link {
+    flex-direction: column;
+    justify-content: center;
+    padding: 10px 15px;
+  }
+
+  .nav-link .label {
+    font-size: 0.8em;
+  }
+
+  .app-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .main-content {
+    height: auto;
+  }
+}
+
+/* Scrollbar Styling */
+.content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
