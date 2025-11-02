@@ -1,0 +1,49 @@
+
+---
+
+### **STEP 2: Create docker-compose.yml locally**
+
+**File: `docker-compose.yml`**
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://pos_user:pos_password@db:5432/pos_db
+    depends_on:
+      - db
+    networks:
+      - pos-network
+
+  frontend:
+    build:
+      context: ./frontend/web
+    ports:
+      - "3000:3000"
+    networks:
+      - pos-network
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: pos_user
+      POSTGRES_PASSWORD: pos_password
+      POSTGRES_DB: pos_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - pos-network
+
+networks:
+  pos-network:
+    driver: bridge
+
+volumes:
+  pgdata:
