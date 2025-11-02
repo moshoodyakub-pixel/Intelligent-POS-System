@@ -1,49 +1,35 @@
-
----
-
-### **STEP 2: Create docker-compose.yml locally**
-
-**File: `docker-compose.yml`**
-```yaml
 version: '3.8'
 
 services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+    container_name: pos-backend
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://pos_user:pos_password@db:5432/pos_db
-    depends_on:
-      - db
+      - DATABASE_URL=sqlite:///./pos_system.db
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - pos-network
 
   frontend:
     build:
-      context: ./frontend/web
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pos-frontend
     ports:
       - "3000:3000"
-    networks:
-      - pos-network
-
-  db:
-    image: postgres:15
+    depends_on:
+      - backend
     environment:
-      POSTGRES_USER: pos_user
-      POSTGRES_PASSWORD: pos_password
-      POSTGRES_DB: pos_db
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - REACT_APP_API_URL=http://localhost:8000/api
     networks:
       - pos-network
 
 networks:
   pos-network:
     driver: bridge
-
-volumes:
-  pgdata:
