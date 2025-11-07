@@ -5,6 +5,9 @@ import Products from './components/Products';
 import Vendors from './components/Vendors';
 import Transactions from './components/Transactions';
 import Forecasting from './components/Forecasting';
+import Login from './components/Login';
+import Register from './components/Register';
+import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
 function App() {
@@ -74,11 +77,15 @@ function App() {
 
           <div className="content">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/vendors" element={<Vendors />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/forecasting" element={<Forecasting />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route element={<PrivateRoute />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/vendors" element={<Vendors />} />
+                <Route path="/transactions" element={<Transactions />} />
+                <Route path="/forecasting" element={<Forecasting />} />
+              </Route>
             </Routes>
           </div>
         </main>

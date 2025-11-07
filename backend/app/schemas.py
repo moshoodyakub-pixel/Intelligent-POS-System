@@ -25,6 +25,16 @@ class Vendor(VendorBase):
     class Config:
         from_attributes = True
 
+# User Schemas
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+# Token Schemas
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 # Product Schemas
 class ProductBase(BaseModel):
     name: str

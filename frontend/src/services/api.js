@@ -45,4 +45,10 @@ export const forecastingAPI = {
   delete: (id) => api.delete(`/forecasting/sales/${id}`),
 };
 
+// Auth API
+export const authAPI = {
+  login: (credentials) => api.post('/auth/login', credentials),
+  register: (userData) => api.post('/auth/register', userData),
+};
+
 export default api;

@@ -1,20 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import SalesForecast
+from ..models import SalesForecast, User
 from ..schemas import SalesForecastCreate, SalesForecastUpdate, SalesForecast as SalesForecastSchema
+from .. import security
 
 router = APIRouter(prefix="/api/forecasting", tags=["forecasting"])
 
 # Get all forecasts
 @router.get("/sales", response_model=list[SalesForecastSchema])
-def get_forecasts(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def get_forecasts(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     forecasts = db.query(SalesForecast).offset(skip).limit(limit).all()
     return forecasts
 
 # Create forecast
 @router.post("/sales", response_model=SalesForecastSchema)
-def create_forecast(forecast: SalesForecastCreate, db: Session = Depends(get_db)):
+def create_forecast(forecast: SalesForecastCreate, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     db_forecast = SalesForecast(**forecast.dict())
     db.add(db_forecast)
     db.commit()
@@ -23,7 +24,7 @@ def create_forecast(forecast: SalesForecastCreate, db: Session = Depends(get_db)
 
 # Get forecast by ID
 @router.get("/sales/{forecast_id}", response_model=SalesForecastSchema)
-def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
+def get_forecast(forecast_id: int, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     forecast = db.query(SalesForecast).filter(SalesForecast.id == forecast_id).first()
     if not forecast:
         raise HTTPException(status_code=404, detail="Forecast not found")
@@ -31,7 +32,7 @@ def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
 
 # Update forecast
 @router.put("/sales/{forecast_id}", response_model=SalesForecastSchema)
-def update_forecast(forecast_id: int, forecast: SalesForecastUpdate, db: Session = Depends(get_db)):
+def update_forecast(forecast_id: int, forecast: SalesForecastUpdate, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     db_forecast = db.query(SalesForecast).filter(SalesForecast.id == forecast_id).first()
     if not db_forecast:
         raise HTTPException(status_code=404, detail="Forecast not found")
@@ -47,7 +48,7 @@ def update_forecast(forecast_id: int, forecast: SalesForecastUpdate, db: Session
 
 # Delete forecast
 @router.delete("/sales/{forecast_id}")
-def delete_forecast(forecast_id: int, db: Session = Depends(get_db)):
+def delete_forecast(forecast_id: int, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     forecast = db.query(SalesForecast).filter(SalesForecast.id == forecast_id).first()
     if not forecast:
         raise HTTPException(status_code=404, detail="Forecast not found")

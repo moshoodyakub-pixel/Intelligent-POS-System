@@ -1,20 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Vendor
+from ..models import Vendor, User
 from ..schemas import VendorCreate, VendorUpdate, Vendor as VendorSchema
+from .. import security
 
 router = APIRouter(prefix="/api/vendors", tags=["vendors"])
 
 # Get all vendors
 @router.get("/", response_model=list[VendorSchema])
-def get_vendors(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def get_vendors(skip: int = 0, limit: int = 10, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     vendors = db.query(Vendor).offset(skip).limit(limit).all()
     return vendors
 
 # Create vendor
 @router.post("/", response_model=VendorSchema)
-def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
+def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     db_vendor = Vendor(**vendor.dict())
     db.add(db_vendor)
     db.commit()
@@ -23,7 +24,7 @@ def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db)):
 
 # Get vendor by ID
 @router.get("/{vendor_id}", response_model=VendorSchema)
-def get_vendor(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
@@ -31,7 +32,7 @@ def get_vendor(vendor_id: int, db: Session = Depends(get_db)):
 
 # Update vendor
 @router.put("/{vendor_id}", response_model=VendorSchema)
-def update_vendor(vendor_id: int, vendor: VendorUpdate, db: Session = Depends(get_db)):
+def update_vendor(vendor_id: int, vendor: VendorUpdate, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     db_vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not db_vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
@@ -47,7 +48,7 @@ def update_vendor(vendor_id: int, vendor: VendorUpdate, db: Session = Depends(ge
 
 # Delete vendor
 @router.delete("/{vendor_id}")
-def delete_vendor(vendor_id: int, db: Session = Depends(get_db)):
+def delete_vendor(vendor_id: int, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
     vendor = db.query(Vendor).filter(Vendor.id == vendor_id).first()
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
