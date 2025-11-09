@@ -25,6 +25,25 @@ class Vendor(VendorBase):
     class Config:
         from_attributes = True
 
+# Forecast Response Schema
+class ForecastData(BaseModel):
+    date: str
+    quantity: float
+
+class ForecastResponse(BaseModel):
+    historical_data: List[ForecastData]
+    forecast_data: List[ForecastData]
+
+# User Schemas
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+# Token Schemas
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 # Product Schemas
 class ProductBase(BaseModel):
     name: str

@@ -7,7 +7,7 @@ A modern, full-stack Point of Sale system with multi-vendor support, real-time f
 - ✅ **Multi-Vendor Management** - Support for multiple vendors with separate product catalogs
 - ✅ **Product Management** - Create, read, update, delete products with pricing
 - ✅ **Transaction Tracking** - Log and manage all sales transactions
-- ✅ **Sales Forecasting** - AI-powered sales predictions using ARIMA
+- ✅ **Sales Forecasting** - AI-powered sales predictions with multiple models (Moving Average, ARIMA) and visualizations.
 - ✅ **Real-time Dashboard** - Live statistics and analytics
 - ✅ **RESTful API** - Complete API documentation with Swagger UI
 - ✅ **Docker Support** - Containerized deployment ready
@@ -133,9 +133,7 @@ Intelligent-POS-System/
 - `DELETE /api/transactions/{id}` - Delete transaction
 
 ### Forecasting
-- `GET /api/forecasting` - List all forecasts
-- `POST /api/forecasting` - Create forecast
-- `GET /api/forecasting/{id}` - Get forecast
+- `POST /api/forecasting/sales` - Generate a sales forecast for a product.
 
 ## 🛠️ Tech Stack
 
@@ -150,6 +148,7 @@ Intelligent-POS-System/
 - React 18 - UI library
 - CSS3 - Styling
 - Fetch API - HTTP client
+- Recharts - Charting library
 
 **Database:**
 - SQLite - Lightweight SQL database

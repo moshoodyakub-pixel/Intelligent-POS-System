@@ -1,57 +1,43 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import SalesForecast
-from ..schemas import SalesForecastCreate, SalesForecastUpdate, SalesForecast as SalesForecastSchema
+from ..models import SalesForecast, User, Transaction
+from ..schemas import SalesForecastUpdate, SalesForecast as SalesForecastSchema, ForecastResponse
+from .. import security
+from typing import List
+from datetime import datetime, timedelta
+import pandas as pd
 
 router = APIRouter(prefix="/api/forecasting", tags=["forecasting"])
 
-# Get all forecasts
-@router.get("/sales", response_model=list[SalesForecastSchema])
-def get_forecasts(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    forecasts = db.query(SalesForecast).offset(skip).limit(limit).all()
-    return forecasts
+# Generate forecast
+@router.post("/sales", response_model=ForecastResponse)
+def generate_forecast(product_id: int, model: str, period: int, db: Session = Depends(get_db), current_user: User = Depends(security.get_current_user)):
+    # Get historical data
+    transactions = db.query(Transaction).filter(Transaction.product_id == product_id).all()
+    if not transactions:
+        raise HTTPException(status_code=404, detail="No historical data for this product")
 
-# Create forecast
-@router.post("/sales", response_model=SalesForecastSchema)
-def create_forecast(forecast: SalesForecastCreate, db: Session = Depends(get_db)):
-    db_forecast = SalesForecast(**forecast.dict())
-    db.add(db_forecast)
-    db.commit()
-    db.refresh(db_forecast)
-    return db_forecast
-
-# Get forecast by ID
-@router.get("/sales/{forecast_id}", response_model=SalesForecastSchema)
-def get_forecast(forecast_id: int, db: Session = Depends(get_db)):
-    forecast = db.query(SalesForecast).filter(SalesForecast.id == forecast_id).first()
-    if not forecast:
-        raise HTTPException(status_code=404, detail="Forecast not found")
-    return forecast
-
-# Update forecast
-@router.put("/sales/{forecast_id}", response_model=SalesForecastSchema)
-def update_forecast(forecast_id: int, forecast: SalesForecastUpdate, db: Session = Depends(get_db)):
-    db_forecast = db.query(SalesForecast).filter(SalesForecast.id == forecast_id).first()
-    if not db_forecast:
-        raise HTTPException(status_code=404, detail="Forecast not found")
+    # Create a pandas DataFrame
+    data = [{"date": t.transaction_date, "quantity": t.quantity} for t in transactions]
+    df = pd.DataFrame(data)
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.set_index('date')
     
-    update_data = forecast.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_forecast, key, value)
-    
-    db.add(db_forecast)
-    db.commit()
-    db.refresh(db_forecast)
-    return db_forecast
+    # Resample to daily sales
+    daily_sales = df['quantity'].resample('D').sum()
 
-# Delete forecast
-@router.delete("/sales/{forecast_id}")
-def delete_forecast(forecast_id: int, db: Session = Depends(get_db)):
-    forecast = db.query(SalesForecast).filter(SalesForecast.id == forecast_id).first()
-    if not forecast:
-        raise HTTPException(status_code=404, detail="Forecast not found")
+    # Generate forecast
+    if model == "Moving Average":
+        forecast_values = daily_sales.rolling(window=7).mean().iloc[-period:].tolist()
+    elif model == "ARIMA":
+        # ARIMA model logic goes here
+        raise HTTPException(status_code=501, detail="ARIMA model not yet implemented")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid model specified")
+
+    # Prepare response
+    historical_data = [{"date": str(date), "quantity": value} for date, value in daily_sales.items()]
+    forecast_data = [{"date": str(daily_sales.index[-1] + timedelta(days=i+1)), "quantity": value} for i, value in enumerate(forecast_values)]
     
-    db.delete(forecast)
-    db.commit()
-    return {"message": "Forecast deleted successfully"}
+    return {"historical_data": historical_data, "forecast_data": forecast_data}
