@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { productsAPI, vendorsAPI, transactionsAPI } from '../services/api';
-import { Grid, Card, CardContent, Typography, CircularProgress, Box } from '@mui/material';
-import { Store, Inventory, Receipt } from '@mui/icons-material';
+import { productsAPI, vendorsAPI, transactionsAPI, forecastingAPI } from '../services/api';
+import './Dashboard.css';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
     products: 0,
     vendors: 0,
     transactions: 0,
+    forecasts: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,16 +19,18 @@ export default function Dashboard() {
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const [products, vendors, transactions] = await Promise.all([
+      const [products, vendors, transactions, forecasts] = await Promise.all([
         productsAPI.getAll(),
         vendorsAPI.getAll(),
         transactionsAPI.getAll(),
+        forecastingAPI.getAll(),
       ]);
 
       setStats({
         products: products.data.length,
         vendors: vendors.data.length,
         transactions: transactions.data.length,
+        forecasts: forecasts.data.length,
       });
       setError(null);
     } catch (err) {
@@ -39,59 +41,44 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-      <CircularProgress />
-    </Box>
-  );
-  if (error) return <Typography color="error">{error}</Typography>;
+  if (loading) return <div className="loading">Loading dashboard...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Inventory sx={{ fontSize: 40, color: 'primary.main' }} />
-              <Typography variant="h5" component="div">
-                {stats.products}
-              </Typography>
-              <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                Total Products
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Store sx={{ fontSize: 40, color: 'secondary.main' }} />
-              <Typography variant="h5" component="div">
-                {stats.vendors}
-              </Typography>
-              <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                Active Vendors
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card>
-            <CardContent>
-              <Receipt sx={{ fontSize: 40, color: 'error.main' }} />
-              <Typography variant="h5" component="div">
-                {stats.transactions}
-              </Typography>
-              <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                Total Transactions
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </Box>
+    <div className="dashboard">
+      <h1>📊 POS System Dashboard</h1>
+
+      <div className="stats-grid">
+        <div className="stat-card products">
+          <h3>📦 Products</h3>
+          <p className="stat-number">{stats.products}</p>
+          <p className="stat-label">Total Products</p>
+        </div>
+
+        <div className="stat-card vendors">
+          <h3>🏢 Vendors</h3>
+          <p className="stat-number">{stats.vendors}</p>
+          <p className="stat-label">Active Vendors</p>
+        </div>
+
+        <div className="stat-card transactions">
+          <h3>💰 Transactions</h3>
+          <p className="stat-number">{stats.transactions}</p>
+          <p className="stat-label">Total Transactions</p>
+        </div>
+
+        <div className="stat-card forecasts">
+          <h3>📈 Forecasts</h3>
+          <p className="stat-number">{stats.forecasts}</p>
+          <p className="stat-label">Sales Forecasts</p>
+        </div>
+      </div>
+
+      <div className="welcome-section">
+        <h2>Welcome to Intelligent POS System</h2>
+        <p>Manage your multi-vendor sales and forecasting platform</p>
+        <p>Use the navigation menu to access Products, Vendors, Transactions, and Forecasting</p>
+      </div>
+    </div>
   );
 }

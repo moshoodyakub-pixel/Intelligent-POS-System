@@ -1,45 +1,79 @@
 import React, { useState, useEffect } from 'react';
 import { forecastingAPI, productsAPI } from '../services/api';
 import './Forecasting.css';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Forecasting() {
+  const [forecasts, setForecasts] = useState([]);
   const [products, setProducts] = useState([]);
-  const [productId, setProductId] = useState('');
-  const [model, setModel] = useState('Moving Average');
-  const [period, setPeriod] = useState(7);
-  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [forecastData, setForecastData] = useState(null);
+  const [formData, setFormData] = useState({
+    product_id: '',
+    forecasted_quantity: '',
+    forecasted_price: '',
+  });
 
   useEffect(() => {
-    fetchProducts();
+    fetchData();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      const res = await productsAPI.getAll();
-      setProducts(res.data);
-    } catch (err) {
-      setError('Failed to load products');
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const fetchData = async () => {
     try {
       setLoading(true);
+      const [foreRes, prodRes] = await Promise.all([
+        forecastingAPI.getAll(),
+        productsAPI.getAll(),
+      ]);
+      setForecasts(foreRes.data);
+      setProducts(prodRes.data);
       setError(null);
-      const res = await forecastingAPI.generate(productId, model, period);
-      setForecastData(res.data);
     } catch (err) {
-      setError('Failed to generate forecast');
+      console.error('Error fetching data:', err);
+      setError('Failed to load forecasts');
     } finally {
       setLoading(false);
     }
   };
 
-  const chartData = forecastData ? [...forecastData.historical_data, ...forecastData.forecast_data.map(d => ({...d, forecast: d.quantity}))] : [];
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'forecasted_quantity' || name === 'forecasted_price' ? parseFloat(value) || '' : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await forecastingAPI.create(formData);
+      setFormData({ product_id: '', forecasted_quantity: '', forecasted_price: '' });
+      setShowForm(false);
+      fetchData();
+    } catch (err) {
+      setError('Failed to create forecast');
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure?')) {
+      try {
+        await forecastingAPI.delete(id);
+        fetchData();
+      } catch (err) {
+        setError('Failed to delete forecast');
+      }
+    }
+  };
+
+  const getProductName = (id) => {
+    const product = products.find(p => p.id === id);
+    return product ? product.name : 'Unknown';
+  };
+
+  if (loading) return <div className="loading">Loading forecasts...</div>;
 
   return (
     <div className="forecasting-container">
@@ -47,60 +81,69 @@ export default function Forecasting() {
       
       {error && <div className="error">{error}</div>}
 
-      <form className="forecast-form" onSubmit={handleSubmit}>
-        <h3>Generate Forecast</h3>
+      <button className="btn-primary" onClick={() => {
+        setShowForm(!showForm);
+        setFormData({ product_id: '', forecasted_quantity: '', forecasted_price: '' });
+      }}>
+        {showForm ? '✕ Close Form' : '➕ New Forecast'}
+      </button>
 
-        <select
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          required
-        >
-          <option value="">Select Product</option>
-          {products.map(product => (
-            <option key={product.id} value={product.id}>{product.name}</option>
-          ))}
-        </select>
+      {showForm && (
+        <form className="forecast-form" onSubmit={handleSubmit}>
+          <h3>Create New Forecast</h3>
 
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          required
-        >
-          <option value="Moving Average">Moving Average</option>
-          <option value="ARIMA" disabled>ARIMA (coming soon)</option>
-        </select>
+          <select
+            name="product_id"
+            value={formData.product_id}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select Product</option>
+            {products.map(product => (
+              <option key={product.id} value={product.id}>{product.name}</option>
+            ))}
+          </select>
 
-        <input
-          type="number"
-          placeholder="Forecast Period (days)"
-          value={period}
-          onChange={(e) => setPeriod(parseInt(e.target.value) || '')}
-          required
-        />
+          <input
+            type="number"
+            name="forecasted_quantity"
+            placeholder="Forecasted Quantity"
+            value={formData.forecasted_quantity}
+            onChange={handleInputChange}
+            required
+          />
 
-        <button type="submit" className="btn-submit" disabled={loading}>
-          {loading ? 'Generating...' : 'Generate Forecast'}
-        </button>
-      </form>
+          <input
+            type="number"
+            name="forecasted_price"
+            placeholder="Forecasted Price"
+            value={formData.forecasted_price}
+            onChange={handleInputChange}
+            step="0.01"
+            required
+          />
 
-      {forecastData && (
-        <div className="forecast-results">
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="quantity" stroke="#8884d8" name="Historical Data" />
-              <Line type="monotone" dataKey="forecast" stroke="#82ca9d" name="Forecasted Data" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+          <button type="submit" className="btn-submit">Create Forecast</button>
+        </form>
       )}
+
+      <div className="forecasts-grid">
+        {forecasts.map(forecast => (
+          <div key={forecast.id} className="forecast-card">
+            <h3>📦 {getProductName(forecast.product_id)}</h3>
+            <p><strong>Forecasted Quantity:</strong> {forecast.forecasted_quantity} units</p>
+            <p><strong>Forecasted Price:</strong> ${forecast.forecasted_price}</p>
+            <p><strong>Forecast Value:</strong> ${(forecast.forecasted_quantity * forecast.forecasted_price).toFixed(2)}</p>
+            <p><strong>Date:</strong> {new Date(forecast.forecast_date).toLocaleDateString()}</p>
+            <button
+              className="btn-delete"
+              onClick={() => handleDelete(forecast.id)}
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
