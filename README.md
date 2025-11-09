@@ -146,9 +146,9 @@ Intelligent-POS-System/
 
 **Frontend:**
 - React 18 - UI library
-- CSS3 - Styling
-- Fetch API - HTTP client
+- Material-UI (MUI) - Design System and Component Library
 - Recharts - Charting library
+- Fetch API - HTTP client
 
 **Database:**
 - SQLite - Lightweight SQL database

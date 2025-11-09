@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { productsAPI, vendorsAPI } from '../services/api';
-import './Products.css';
+import { DataGrid } from '@mui/x-data-grid';
+import { Button, Modal, Box, TextField, Select, MenuItem, FormControl, InputLabel, CircularProgress } from '@mui/material';
+import { Add, Edit, Delete } from '@mui/icons-material';
+
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 400,
+  bgcolor: 'background.paper',
+  border: '2px solid #000',
+  boxShadow: 24,
+  p: 4,
+};
 
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [vendors, setVendors] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,6 +53,13 @@ export default function Products() {
     }
   };
 
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+    setEditingId(null);
+    setFormData({ name: '', description: '', price: '', quantity: '', vendor_id: '' });
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -52,12 +73,10 @@ export default function Products() {
     try {
       if (editingId) {
         await productsAPI.update(editingId, formData);
-        setEditingId(null);
       } else {
         await productsAPI.create(formData);
       }
-      setFormData({ name: '', description: '', price: '', quantity: '', vendor_id: '' });
-      setShowForm(false);
+      handleClose();
       fetchData();
     } catch (err) {
       setError('Failed to save product');
@@ -68,7 +87,7 @@ export default function Products() {
   const handleEdit = (product) => {
     setFormData(product);
     setEditingId(product.id);
-    setShowForm(true);
+    handleOpen();
   };
 
   const handleDelete = async (id) => {
@@ -82,111 +101,126 @@ export default function Products() {
     }
   };
 
-  if (loading) return <div className="loading">Loading products...</div>;
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 90 },
+    { field: 'name', headerName: 'Name', width: 150 },
+    { field: 'description', headerName: 'Description', width: 250 },
+    { field: 'price', headerName: 'Price', type: 'number', width: 110 },
+    { field: 'quantity', headerName: 'Quantity', type: 'number', width: 110 },
+    {
+      field: 'vendor_id',
+      headerName: 'Vendor',
+      width: 150,
+      valueGetter: (params) => {
+        const vendor = vendors.find(v => v.id === params.row.vendor_id);
+        return vendor ? vendor.name : 'Unknown';
+      },
+    },
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      sortable: false,
+      width: 150,
+      renderCell: (params) => (
+        <>
+          <IconButton onClick={() => handleEdit(params.row)}>
+            <Edit />
+          </IconButton>
+          <IconButton onClick={() => handleDelete(params.row.id)}>
+            <Delete />
+          </IconButton>
+        </>
+      ),
+    },
+  ];
+
+  if (loading) return <CircularProgress />;
 
   return (
-    <div className="products-container">
-      <h1>📦 Products Management</h1>
-      
-      {error && <div className="error">{error}</div>}
-
-      <button className="btn-primary" onClick={() => {
-        setShowForm(!showForm);
-        setEditingId(null);
-        setFormData({ name: '', description: '', price: '', quantity: '', vendor_id: '' });
-      }}>
-        {showForm ? '✕ Close Form' : '➕ Add Product'}
-      </button>
-
-      {showForm && (
-        <form className="product-form" onSubmit={handleSubmit}>
-          <h3>{editingId ? 'Edit Product' : 'Add New Product'}</h3>
-          
-          <input
-            type="text"
-            name="name"
-            placeholder="Product Name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-          />
-          
-          <textarea
-            name="description"
-            placeholder="Description"
-            value={formData.description}
-            onChange={handleInputChange}
-            rows="3"
-          />
-          
-          <input
-            type="number"
-            name="price"
-            placeholder="Price"
-            value={formData.price}
-            onChange={handleInputChange}
-            step="0.01"
-            required
-          />
-          
-          <input
-            type="number"
-            name="quantity"
-            placeholder="Quantity"
-            value={formData.quantity}
-            onChange={handleInputChange}
-            required
-          />
-          
-          <select
-            name="vendor_id"
-            value={formData.vendor_id}
-            onChange={handleInputChange}
-            required
-          >
-            <option value="">Select Vendor</option>
-            {vendors.map(vendor => (
-              <option key={vendor.id} value={vendor.id}>{vendor.name}</option>
-            ))}
-          </select>
-          
-          <button type="submit" className="btn-submit">
-            {editingId ? 'Update Product' : 'Create Product'}
-          </button>
-        </form>
-      )}
-
-      <div className="products-table">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Price</th>
-              <th>Quantity</th>
-              <th>Vendor</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map(product => (
-              <tr key={product.id}>
-                <td>{product.id}</td>
-                <td>{product.name}</td>
-                <td>{product.description}</td>
-                <td>${product.price}</td>
-                <td>{product.quantity}</td>
-                <td>{product.vendor_id}</td>
-                <td>
-                  <button className="btn-edit" onClick={() => handleEdit(product)}>Edit</button>
-                  <button className="btn-delete" onClick={() => handleDelete(product.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div style={{ height: 400, width: '100%' }}>
+      <Button
+        variant="contained"
+        startIcon={<Add />}
+        onClick={handleOpen}
+        sx={{ mb: 2 }}
+      >
+        Add Product
+      </Button>
+      <DataGrid
+        rows={products}
+        columns={columns}
+        pageSize={5}
+        rowsPerPageOptions={[5]}
+        checkboxSelection
+        disableSelectionOnClick
+      />
+      <Modal
+        open={open}
+        onClose={handleClose}
+      >
+        <Box sx={style}>
+          <Typography variant="h6" component="h2">
+            {editingId ? 'Edit Product' : 'Add New Product'}
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Product Name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              multiline
+              rows={3}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Price"
+              name="price"
+              type="number"
+              value={formData.price}
+              onChange={handleInputChange}
+              required
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Quantity"
+              name="quantity"
+              type="number"
+              value={formData.quantity}
+              onChange={handleInputChange}
+              required
+              sx={{ mb: 2 }}
+            />
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Vendor</InputLabel>
+              <Select
+                name="vendor_id"
+                value={formData.vendor_id}
+                onChange={handleInputChange}
+                required
+              >
+                {vendors.map(vendor => (
+                  <MenuItem key={vendor.id} value={vendor.id}>{vendor.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Button type="submit" variant="contained">
+              {editingId ? 'Update' : 'Create'}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
     </div>
   );
 }

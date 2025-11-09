@@ -29,7 +29,7 @@ def generate_forecast(product_id: int, model: str, period: int, db: Session = De
 
     # Generate forecast
     if model == "Moving Average":
-        forecast_values = daily_sales.rolling(window=7).mean().iloc[-period:].tolist()
+        forecast_values = daily_sales.rolling(window=7).mean().iloc[-period:].fillna(0).tolist()
     elif model == "ARIMA":
         # ARIMA model logic goes here
         raise HTTPException(status_code=501, detail="ARIMA model not yet implemented")
