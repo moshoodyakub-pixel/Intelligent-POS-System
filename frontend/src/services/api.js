@@ -38,11 +38,7 @@ export const transactionsAPI = {
 
 // Forecasting API
 export const forecastingAPI = {
-  getAll: () => api.get('/forecasting/sales'),
-  getById: (id) => api.get(`/forecasting/sales/${id}`),
-  create: (data) => api.post('/forecasting/sales', data),
-  update: (id, data) => api.put(`/forecasting/sales/${id}`, data),
-  delete: (id) => api.delete(`/forecasting/sales/${id}`),
+  generate: (productId, model, period) => api.post(`/forecasting/sales?product_id=${productId}&model=${model}&period=${period}`),
 };
 
 // Auth API
