@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -33,18 +33,16 @@ export const transactionsAPI = {
   getById: (id) => api.get(`/transactions/${id}`),
   create: (data) => api.post('/transactions/', data),
   update: (id, data) => api.put(`/transactions/${id}`, data),
-  delete: (id) => api.delete(`/transactions/${id}`),
+  delete: (id) => api.delete(`/transactions/{id}`),
 };
 
 // Forecasting API
 export const forecastingAPI = {
-  generate: (productId, model, period) => api.post(`/forecasting/sales?product_id=${productId}&model=${model}&period=${period}`),
-};
-
-// Auth API
-export const authAPI = {
-  login: (credentials) => api.post('/auth/login', credentials),
-  register: (userData) => api.post('/auth/register', userData),
+  getAll: () => api.get('/forecasting/sales'),
+  getById: (id) => api.get(`/forecasting/sales/${id}`),
+  create: (data) => api.post('/forecasting/sales', data),
+  update: (id, data) => api.put(`/forecasting/sales/${id}`, data),
+  delete: (id) => api.delete(`/forecasting/sales/${id}`),
 };
 
 export default api;

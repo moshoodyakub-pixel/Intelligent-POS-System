@@ -1,7 +1,5 @@
 # 🎯 Intelligent POS System
 
-[![CI](https://github.com/moshoodyakub-pixel/Intelligent-POS-System/actions/workflows/ci.yml/badge.svg)](https://github.com/moshoodyakub-pixel/Intelligent-POS-System/actions/workflows/ci.yml)
-
 A modern, full-stack Point of Sale system with multi-vendor support, real-time forecasting, and comprehensive transaction management.
 
 ## 📋 Features
@@ -9,7 +7,7 @@ A modern, full-stack Point of Sale system with multi-vendor support, real-time f
 - ✅ **Multi-Vendor Management** - Support for multiple vendors with separate product catalogs
 - ✅ **Product Management** - Create, read, update, delete products with pricing
 - ✅ **Transaction Tracking** - Log and manage all sales transactions
-- ✅ **Sales Forecasting** - AI-powered sales predictions with multiple models (Moving Average, ARIMA) and visualizations.
+- ✅ **Sales Forecasting** - AI-powered sales predictions using ARIMA
 - ✅ **Real-time Dashboard** - Live statistics and analytics
 - ✅ **RESTful API** - Complete API documentation with Swagger UI
 - ✅ **Docker Support** - Containerized deployment ready
@@ -134,6 +132,9 @@ Intelligent-POS-System/
 - `PUT /api/transactions/{id}` - Update transaction
 - `DELETE /api/transactions/{id}` - Delete transaction
 
+### Health Check
+- `GET /api/health` - Get application status
+
 ### Forecasting
 - `POST /api/forecasting/sales` - Generate a sales forecast for a product.
 
@@ -148,8 +149,7 @@ Intelligent-POS-System/
 
 **Frontend:**
 - React 18 - UI library
-- Material-UI (MUI) - Design System and Component Library
-- Recharts - Charting library
+- CSS3 - Styling
 - Fetch API - HTTP client
 
 **Database:**
@@ -158,7 +158,6 @@ Intelligent-POS-System/
 **DevOps:**
 - Docker - Containerization
 - Docker Compose - Multi-container orchestration
-- GitHub Actions - CI/CD
 
 ## 📈 Performance
 
