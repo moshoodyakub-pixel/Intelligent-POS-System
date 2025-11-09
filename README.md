@@ -1,5 +1,7 @@
 # 🎯 Intelligent POS System
 
+[![CI](https://github.com/moshoodyakub-pixel/Intelligent-POS-System/actions/workflows/ci.yml/badge.svg)](https://github.com/moshoodyakub-pixel/Intelligent-POS-System/actions/workflows/ci.yml)
+
 A modern, full-stack Point of Sale system with multi-vendor support, real-time forecasting, and comprehensive transaction management.
 
 ## 📋 Features
@@ -156,6 +158,7 @@ Intelligent-POS-System/
 **DevOps:**
 - Docker - Containerization
 - Docker Compose - Multi-container orchestration
+- GitHub Actions - CI/CD
 
 ## 📈 Performance
 
