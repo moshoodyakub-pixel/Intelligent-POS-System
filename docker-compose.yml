@@ -9,10 +9,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./pos_system.db
-    volumes:
-      - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - DATABASE_URL=postgresql://user:password@db/pos_db
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
     networks:
       - pos-network
 
@@ -22,14 +22,27 @@ services:
       dockerfile: Dockerfile
     container_name: pos-frontend
     ports:
-      - "3000:3000"
+      - "80:80"
     depends_on:
       - backend
+    networks:
+      - pos-network
+
+  db:
+    image: postgres:13-alpine
+    container_name: pos-db
     environment:
-      - REACT_APP_API_URL=http://localhost:8000/api
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=pos_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - pos-network
 
 networks:
   pos-network:
     driver: bridge
+
+volumes:
+  postgres_data:

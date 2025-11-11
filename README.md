@@ -132,11 +132,10 @@ Intelligent-POS-System/
 - `PUT /api/transactions/{id}` - Update transaction
 - `DELETE /api/transactions/{id}` - Delete transaction
 
-### Health Check
-- `GET /api/health` - Get application status
-
 ### Forecasting
-- `POST /api/forecasting/sales` - Generate a sales forecast for a product.
+- `GET /api/forecasting` - List all forecasts
+- `POST /api/forecasting` - Create forecast
+- `GET /api/forecasting/{id}` - Get forecast
 
 ## 🛠️ Tech Stack
 

@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTable } from 'react-table';
+import Modal from 'react-modal';
 import { vendorsAPI } from '../services/api';
 import './Vendors.css';
 
+Modal.setAppElement('#root');
+
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,12 +47,10 @@ export default function Vendors() {
     try {
       if (editingId) {
         await vendorsAPI.update(editingId, formData);
-        setEditingId(null);
       } else {
         await vendorsAPI.create(formData);
       }
-      setFormData({ name: '', email: '', phone: '', address: '' });
-      setShowForm(false);
+      closeModal();
       fetchVendors();
     } catch (err) {
       setError('Failed to save vendor');
@@ -56,10 +58,21 @@ export default function Vendors() {
     }
   };
 
-  const handleEdit = (vendor) => {
-    setFormData(vendor);
-    setEditingId(vendor.id);
-    setShowForm(true);
+  const openModal = (vendor = null) => {
+    if (vendor) {
+      setFormData(vendor);
+      setEditingId(vendor.id);
+    } else {
+      setFormData({ name: '', email: '', phone: '', address: '' });
+      setEditingId(null);
+    }
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+    setEditingId(null);
+    setFormData({ name: '', email: '', phone: '', address: '' });
   };
 
   const handleDelete = async (id) => {
@@ -73,6 +86,30 @@ export default function Vendors() {
     }
   };
 
+  const columns = useMemo(() => [
+    { Header: 'Name', accessor: 'name' },
+    { Header: 'Email', accessor: 'email' },
+    { Header: 'Phone', accessor: 'phone' },
+    { Header: 'Address', accessor: 'address' },
+    {
+      Header: 'Actions',
+      Cell: ({ row }) => (
+        <div className="actions">
+          <button className="btn-edit" onClick={() => openModal(row.original)}>Edit</button>
+          <button className="btn-delete" onClick={() => handleDelete(row.original.id)}>Delete</button>
+        </div>
+      ),
+    },
+  ], []);
+
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    rows,
+    prepareRow,
+  } = useTable({ columns, data: vendors });
+
   if (loading) return <div className="loading">Loading vendors...</div>;
 
   return (
@@ -81,18 +118,43 @@ export default function Vendors() {
       
       {error && <div className="error">{error}</div>}
 
-      <button className="btn-primary" onClick={() => {
-        setShowForm(!showForm);
-        setEditingId(null);
-        setFormData({ name: '', email: '', phone: '', address: '' });
-      }}>
-        {showForm ? '✕ Close Form' : '➕ Add Vendor'}
+      <button className="btn-primary" onClick={() => openModal()}>
+        ➕ Add Vendor
       </button>
 
-      {showForm && (
-        <form className="vendor-form" onSubmit={handleSubmit}>
-          <h3>{editingId ? 'Edit Vendor' : 'Add New Vendor'}</h3>
-          
+      <table {...getTableProps()} className="vendors-table">
+        <thead>
+          {headerGroups.map(headerGroup => (
+            <tr {...headerGroup.getHeaderGroupProps()}>
+              {headerGroup.headers.map(column => (
+                <th {...column.getHeaderProps()}>{column.render('Header')}</th>
+              ))}
+            </tr>
+          ))}
+        </thead>
+        <tbody {...getTableBodyProps()}>
+          {rows.map(row => {
+            prepareRow(row);
+            return (
+              <tr {...row.getRowProps()}>
+                {row.cells.map(cell => (
+                  <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        contentLabel="Vendor Form"
+        className="modal"
+        overlayClassName="overlay"
+      >
+        <h2>{editingId ? 'Edit Vendor' : 'Add New Vendor'}</h2>
+        <form onSubmit={handleSubmit}>
           <input
             type="text"
             name="name"
@@ -101,7 +163,6 @@ export default function Vendors() {
             onChange={handleInputChange}
             required
           />
-          
           <input
             type="email"
             name="email"
@@ -110,7 +171,6 @@ export default function Vendors() {
             onChange={handleInputChange}
             required
           />
-          
           <input
             type="tel"
             name="phone"
@@ -119,7 +179,6 @@ export default function Vendors() {
             onChange={handleInputChange}
             required
           />
-          
           <input
             type="text"
             name="address"
@@ -128,27 +187,16 @@ export default function Vendors() {
             onChange={handleInputChange}
             required
           />
-          
-          <button type="submit" className="btn-submit">
-            {editingId ? 'Update Vendor' : 'Create Vendor'}
-          </button>
-        </form>
-      )}
-
-      <div className="vendors-grid">
-        {vendors.map(vendor => (
-          <div key={vendor.id} className="vendor-card">
-            <h3>{vendor.name}</h3>
-            <p><strong>Email:</strong> {vendor.email}</p>
-            <p><strong>Phone:</strong> {vendor.phone}</p>
-            <p><strong>Address:</strong> {vendor.address}</p>
-            <div className="vendor-actions">
-              <button className="btn-edit" onClick={() => handleEdit(vendor)}>Edit</button>
-              <button className="btn-delete" onClick={() => handleDelete(vendor.id)}>Delete</button>
-            </div>
+          <div className="modal-actions">
+            <button type="submit" className="btn-submit">
+              {editingId ? 'Update' : 'Create'}
+            </button>
+            <button type="button" className="btn-cancel" onClick={closeModal}>
+              Cancel
+            </button>
           </div>
-        ))}
-      </div>
+        </form>
+      </Modal>
     </div>
   );
 }
