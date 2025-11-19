@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .models import Product, Vendor, Transaction, SalesForecast
-from .routes import products, vendors, transactions, forecasting
+from .routes import products, vendors, transactions, forecasting, health
 
 app = FastAPI(
     title="Intelligent POS System",
@@ -30,6 +30,7 @@ app.include_router(products.router)
 app.include_router(vendors.router)
 app.include_router(transactions.router)
 app.include_router(forecasting.router)
+app.include_router(health.router)
 
 # Health check endpoint
 @app.get("/")
@@ -38,11 +39,4 @@ def read_root():
         "message": "Welcome to Intelligent POS System",
         "version": "1.0.0",
         "status": "running"
-    }
-
-@app.get("/health")
-def health_check():
-    return {
-        "status": "healthy",
-        "message": "API is running"
     }
