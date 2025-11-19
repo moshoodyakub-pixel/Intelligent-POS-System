@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTable } from 'react-table';
 import Modal from 'react-modal';
 import { transactionsAPI, productsAPI, vendorsAPI } from '../services/api';
@@ -73,7 +73,7 @@ export default function Transactions() {
     setModalIsOpen(false);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (window.confirm('Are you sure?')) {
       try {
         await transactionsAPI.delete(id);
@@ -82,10 +82,10 @@ export default function Transactions() {
         setError('Failed to delete transaction');
       }
     }
-  };
+  }, []);
 
-  const getProductName = (id) => products.find(p => p.id === id)?.name || 'Unknown';
-  const getVendorName = (id) => vendors.find(v => v.id === id)?.name || 'Unknown';
+  const getProductName = useCallback((id) => products.find(p => p.id === id)?.name || 'Unknown', [products]);
+  const getVendorName = useCallback((id) => vendors.find(v => v.id === id)?.name || 'Unknown', [vendors]);
 
   const columns = useMemo(() => [
     { Header: 'ID', accessor: 'id' },
@@ -100,7 +100,7 @@ export default function Transactions() {
         <button className="btn-delete" onClick={() => handleDelete(row.original.id)}>Delete</button>
       ),
     },
-  ], [products, vendors]);
+  ], [getVendorName, getProductName, handleDelete]);
 
   const {
     getTableProps,
