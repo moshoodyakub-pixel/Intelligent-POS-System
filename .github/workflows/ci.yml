@@ -66,3 +66,28 @@ jobs:
           file: ./frontend/Dockerfile
           push: false
           tags: pos-frontend:latest
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install detect-secrets
+
+      - name: Run detect-secrets
+        run: detect-secrets scan --baseline .secrets.baseline
+
+      - name: Install gitleaks
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Run gitleaks
+        run: gitleaks detect --source . --no-git -v
