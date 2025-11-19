@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTable } from 'react-table';
 import Modal from 'react-modal';
 import { vendorsAPI } from '../services/api';
@@ -75,7 +75,7 @@ export default function Vendors() {
     setFormData({ name: '', email: '', phone: '', address: '' });
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (window.confirm('Are you sure?')) {
       try {
         await vendorsAPI.delete(id);
@@ -84,7 +84,7 @@ export default function Vendors() {
         setError('Failed to delete vendor');
       }
     }
-  };
+  }, []);
 
   const columns = useMemo(() => [
     { Header: 'Name', accessor: 'name' },
@@ -100,7 +100,7 @@ export default function Vendors() {
         </div>
       ),
     },
-  ], []);
+  ], [openModal, handleDelete]);
 
   const {
     getTableProps,

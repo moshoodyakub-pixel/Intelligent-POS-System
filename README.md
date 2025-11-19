@@ -104,6 +104,10 @@ Intelligent-POS-System/
 │   ├── package.json            # Node dependencies
 │   ├── Dockerfile              # Frontend container
 │   └── .dockerignore
+├── systemd/
+│   └── pos-system.service      # Systemd unit file
+├── scripts/
+│   └── backup.sh               # Database backup script
 ├── docker-compose.yml          # Docker orchestration
 ├── .gitignore                  # Git ignore rules
 └── README.md                   # This file
@@ -204,6 +208,42 @@ heroku login
 heroku create your-app-name
 git push heroku main
 ```
+
+## 🛡️ Production Hardening
+
+This project includes additional features to make it more robust for production environments.
+
+### Systemd Service
+
+A `systemd` unit file is provided in the `systemd/` directory to manage the Docker Compose services. This allows the application to start automatically on boot.
+
+To use it, copy the `pos-system.service` file to `/etc/systemd/system/` and then run:
+
+```bash
+sudo systemctl enable pos-system.service
+sudo systemctl start pos-system.service
+```
+
+### Database Backups
+
+A backup script is available in `scripts/backup.sh`. This script uses `pg_dump` to create a snapshot of the PostgreSQL database and stores it in a `backups/` directory (which will be created automatically).
+
+To run a backup, simply execute the script:
+
+```bash
+./scripts/backup.sh
+```
+
+It is recommended to set up a cron job to run this script at regular intervals.
+
+### CI/CD with GitHub Actions
+
+A GitHub Actions workflow is defined in `.github/workflows/deploy.yml`. This workflow will automatically build and publish the Docker images for the backend and frontend services to Docker Hub whenever code is pushed to the `main` branch.
+
+To use this, you will need to configure the following secrets in your GitHub repository settings:
+
+- `DOCKERHUB_USERNAME`: Your Docker Hub username.
+- `DOCKERHUB_TOKEN`: A Docker Hub access token with write permissions.
 
 ## 📝 Environment Variables
 
