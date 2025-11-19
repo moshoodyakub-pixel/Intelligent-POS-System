@@ -20,7 +20,11 @@ services:
       dockerfile: Dockerfile
     container_name: pos-frontend
     ports:
+<<<<<<< Updated upstream
       - "80:80"
+=======
+      - "3000:80"
+>>>>>>> Stashed changes
     depends_on:
       - backend
     networks:
