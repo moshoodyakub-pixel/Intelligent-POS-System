@@ -20,7 +20,11 @@ export default function Transactions() {
     total_price: '',
   });
 
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
     try {
       setLoading(true);
       const [transRes, prodRes, vendRes] = await Promise.all([
@@ -38,11 +42,7 @@ export default function Transactions() {
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -82,7 +82,7 @@ export default function Transactions() {
         setError('Failed to delete transaction');
       }
     }
-  }, [fetchData]);
+  }, []);
 
   const getProductName = useCallback((id) => products.find(p => p.id === id)?.name || 'Unknown', [products]);
   const getVendorName = useCallback((id) => vendors.find(v => v.id === id)?.name || 'Unknown', [vendors]);
