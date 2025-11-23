@@ -21,7 +21,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "clean": "rimraf node_modules package-lock.json"
   },
   "eslintConfig": {
     "extends": [
@@ -40,5 +41,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "overrides": {
+    "nth-check": "2.0.1",
+    "postcss": "8.4.31",
+    "webpack-dev-server": "5.2.2"
+  },
+  "devDependencies": {
+    "rimraf": "^3.0.2"
   }
 }
