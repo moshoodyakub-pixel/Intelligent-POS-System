@@ -19,11 +19,7 @@ export default function Vendors() {
     address: '',
   });
 
-  useEffect(() => {
-    fetchVendors();
-  }, []);
-
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     try {
       setLoading(true);
       const response = await vendorsAPI.getAll();
@@ -35,7 +31,11 @@ export default function Vendors() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchVendors();
+  }, [fetchVendors]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,7 +58,7 @@ export default function Vendors() {
     }
   };
 
-  const openModal = (vendor = null) => {
+  const openModal = useCallback((vendor = null) => {
     if (vendor) {
       setFormData(vendor);
       setEditingId(vendor.id);
@@ -67,7 +67,7 @@ export default function Vendors() {
       setEditingId(null);
     }
     setModalIsOpen(true);
-  };
+  }, []);
 
   const closeModal = () => {
     setModalIsOpen(false);
@@ -84,7 +84,7 @@ export default function Vendors() {
         setError('Failed to delete vendor');
       }
     }
-  }, []);
+  }, [fetchVendors]);
 
   const columns = useMemo(() => [
     { Header: 'Name', accessor: 'name' },
