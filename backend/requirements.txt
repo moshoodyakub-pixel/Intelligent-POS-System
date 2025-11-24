@@ -5,16 +5,11 @@ pydantic
 pydantic-core
 python-multipart==0.0.6
 pydantic-settings==2.1.0
-<<<<<<< Updated upstream
 psycopg2-binary
 pytest
-httpx
-=======
-httpx==0.25.2
-pytest
+httpx==0.25.0
 passlib
 python-jose[cryptography]
 pandas
 statsmodels
 bcrypt
->>>>>>> Stashed changes
