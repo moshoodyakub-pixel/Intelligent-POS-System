@@ -14,6 +14,10 @@ From your workstation (or CI logs), note the image tags used (preferably commit 
     ```
     *(Replace tags with the ones from your CI logs.)*
 
+### Secrets & Permissions
+- **Ensure registry credentials** are stored in repo/organization Actions secrets (`DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` or a GHCR PAT).
+- **Never run `npm start`** or any other development server on a publicly routable host.
+
 ## B — Deploy to Staging: Options & Exact Commands
 
 ### If staging is a docker-compose host
@@ -91,14 +95,22 @@ docker run -d --name frontend -p 8080:80 your-docker-user/frontend:abcdef1
 -   **Browser console:** Open DevTools → Console and ensure no uncaught exceptions or repeated 500 network responses.
 -   **API checks:** Use `curl` to confirm backend endpoints:
     ```bash
+    # Health check should return HTTP 200 and a JSON body like {"status":"ok"}
     curl -s -f https://staging.api.example/health || echo "health failed"
     curl -s -f https://staging.api.example/api/vendors | jq '.[0]' # verify response shape
     ```
 
 ## D — Automated Smoke Tests (Headless)
 
--   **Playwright (if you have tests):** `npx playwright test --grep @smoke --project=chromium --reporter=list`
--   **Cypress:** `npx cypress run --spec "cypress/e2e/smoke.spec.js"`
+-   **Playwright (if you have tests):**
+    ```bash
+    # Run tests locally with the target URL set
+    FRONTEND_BASE_URL=https://staging.example npx playwright test --grep @smoke --project=chromium --reporter=list
+    ```
+-   **Cypress:**
+    ```bash
+    npx cypress run --spec "cypress/e2e/smoke.spec.js"
+    ```
 -   **Simple script (curl-based):** `./scripts/smoke-check.sh`
     -   Create a small script that runs a few curl/POST checks and exits non-zero if any fail.
 
@@ -117,7 +129,8 @@ docker run -d --name frontend -p 8080:80 your-docker-user/frontend:abcdef1
 
 ## F — Rollback Procedure (Quick)
 
--   **docker-compose:** Re-deploy the previous tag (be sure you saved it).
+-   **Identify Rollback Tag:** The previous stable release tag should be stored in a `RELEASES.md` file or in your CI build artifacts.
+-   **docker-compose:** Re-deploy the previous tag.
     ```bash
     export FRONTEND_IMAGE=your-docker-user/frontend:previous-tag
     docker compose up -d
@@ -142,7 +155,7 @@ docker run -d --name frontend -p 8080:80 your-docker-user/frontend:abcdef1
     -   **Body:** Steps to reproduce, failing log, screenshot, expected vs actual, assign owner.
 -   **Create Issue B — Audit follow-up:**
     -   **Title:** "Audit triage: monitor react-scripts / webpack-dev-server for upstream fix"
-    -   **Body:** Link to `frontend/AUDIT-2025-11-23.md`, note the remaining moderate advisories and monitoring cadence.
+    -   **Body:** Link to [`frontend/AUDIT-2025-11-23.md`](./frontend/AUDIT-2025-11-23.md), note the remaining moderate advisories and monitoring cadence.
 
 ## H — Checklist You Can Copy/Paste into a Runbook
 
