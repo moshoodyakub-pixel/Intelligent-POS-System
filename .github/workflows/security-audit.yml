@@ -1,0 +1,31 @@
+name: Weekly Security Audit
+
+on:
+  schedule:
+    # Runs at 00:00 on Sunday
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend --legacy-peer-deps
+
+      - name: Run npm audit
+        run: npm audit --prefix frontend > npm-audit-report.txt || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-audit-report
+          path: npm-audit-report.txt
