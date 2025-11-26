@@ -7,12 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- `DEPLOYMENT.md`: A comprehensive guide for deploying the application, including steps for verification, smoke testing, monitoring, and rollback.
+## [1.0.0] - 2025-11-26
 
 ### Fixed
-- Resolved a merge conflict in `docker-compose.yml` that was preventing the application from building correctly. The frontend service port is now correctly set to `3000:80`.
-- Resolved merge conflicts in `DEPLOYMENT.md` to finalize the documentation.
+- Resolved persistent frontend test failures by implementing a robust Jest configuration.
+- Corrected the Jest `transformIgnorePatterns` to properly handle ES Modules.
+- Replaced unsafe global mocks in `setupTests.js` with scoped mocks in the relevant test file.
+
+### Added
+- A custom Jest configuration in `package.json` to handle module mapping and transformations.
+- Mocks for `react-router-dom` and static assets.
+- `identity-obj-proxy` as a dev dependency for CSS module mocking.
+- A weekly security audit GitHub Actions workflow.
 
 ### Changed
-- Improved the `DEPLOYMENT.md` guide with additional details on security, health checks, automated testing, and rollback procedures.
+- Updated the `ci.yml` workflow to use `npm ci` for faster, more reliable builds.
+- Removed `continue-on-error: true` from the frontend test job in the CI workflow.
+
+### Removed
+- Redundant `RELEASE_NOTES.md` file to standardize on `CHANGELOG.md`.
