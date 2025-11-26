@@ -12,7 +12,8 @@ This release focuses on improving the project's documentation and CI/CD processe
 ## 🐛 Bug Fixes
 
 - **`docker-compose.yml`:** Resolved a persistent merge conflict that was blocking builds. The frontend service is now correctly configured to be accessible on port 3000.
+- **Frontend Tests:** Fixed the frontend test suite, which was previously failing due to issues with module resolution and test environment setup. The tests now pass reliably.
 
 ## ⚠️ Known Issues
 
-- **Failing Frontend Tests:** The frontend test suite currently fails due to a pre-existing issue with the `react-router-dom` module not being found during the test run. This issue is tracked in [TICKET-ID] and does not affect the application's runtime behavior.
+- There are no known issues in this release.
