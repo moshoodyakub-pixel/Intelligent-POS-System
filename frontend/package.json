@@ -48,6 +48,17 @@
     "webpack-dev-server": "5.2.2"
   },
   "devDependencies": {
-    "rimraf": "^3.0.2"
+    "rimraf": "^3.0.2",
+    "identity-obj-proxy": "^3.0.0"
+  },
+  "jest": {
+    "transformIgnorePatterns": [
+      "/node_modules/(?!react-router-dom)/"
+    ],
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.js",
+      "\\\\.(css|less|scss|sass)$": "identity-obj-proxy",
+      "\\\\.(svg)$": "<rootDir>/__mocks__/fileMock.js"
+    }
   }
 }
