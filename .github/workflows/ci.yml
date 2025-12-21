@@ -21,7 +21,7 @@ jobs:
         run: pip install -r backend/requirements.txt
 
       - name: Run backend tests
-        run: pytest backend/app/tests/
+        run: cd backend && PYTHONPATH=. pytest app/tests/ -v
 
   test-frontend:
     runs-on: ubuntu-latest
