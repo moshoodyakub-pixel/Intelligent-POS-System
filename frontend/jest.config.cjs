@@ -11,6 +11,7 @@ module.exports = {
   // Map react-router-dom to the local mock so module resolution never fails
   moduleNameMapper: {
     '^react-router-dom$': '<rootDir>/__mocks__/react-router-dom.js',
+    '^@sentry/react$': '<rootDir>/__mocks__/@sentry/react.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(svg)$': '<rootDir>/__mocks__/fileMock.js'
   },

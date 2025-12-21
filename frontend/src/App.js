@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import * as Sentry from '@sentry/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Dashboard from './components/Dashboard';
 import Products from './components/Products';
@@ -10,6 +11,51 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
+
+// Error fallback component for Sentry error boundary
+function ErrorFallback({ error, resetError }) {
+  return (
+    <div className="error-boundary" style={{
+      padding: '40px',
+      textAlign: 'center',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+      borderRadius: '8px',
+      margin: '20px'
+    }}>
+      <h2 style={{ color: '#991b1b' }}>Something went wrong</h2>
+      <p style={{ color: '#7f1d1d' }}>
+        An unexpected error occurred. Our team has been notified.
+      </p>
+      <details style={{ marginTop: '20px', textAlign: 'left' }}>
+        <summary style={{ cursor: 'pointer', color: '#666' }}>Error Details</summary>
+        <pre style={{ 
+          backgroundColor: '#f3f4f6', 
+          padding: '10px', 
+          borderRadius: '4px',
+          overflow: 'auto',
+          fontSize: '12px'
+        }}>
+          {error?.message}
+        </pre>
+      </details>
+      <button 
+        onClick={resetError}
+        style={{
+          marginTop: '20px',
+          padding: '10px 20px',
+          backgroundColor: '#3b82f6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer'
+        }}
+      >
+        Try Again
+      </button>
+    </div>
+  );
+}
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -131,11 +177,20 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </Router>
+    <Sentry.ErrorBoundary 
+      fallback={({ error, resetError }) => (
+        <ErrorFallback error={error} resetError={resetError} />
+      )}
+      onError={(error) => {
+        console.error('Error caught by Sentry boundary:', error);
+      }}
+    >
+      <Router>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </Router>
+    </Sentry.ErrorBoundary>
   );
 }
 

@@ -3,6 +3,7 @@ Middleware for rate limiting, error handling, and request logging.
 """
 import os
 import time
+import traceback
 from collections import defaultdict
 from typing import Callable
 from fastapi import Request, Response, HTTPException
@@ -12,9 +13,27 @@ import logging
 
 from .config import settings
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging with structured format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+
+def capture_exception_to_sentry(exc: Exception, request: Request = None):
+    """Capture exception to Sentry if configured."""
+    if settings.SENTRY_DSN:
+        try:
+            import sentry_sdk
+            with sentry_sdk.push_scope() as scope:
+                if request:
+                    scope.set_tag("url", str(request.url))
+                    scope.set_tag("method", request.method)
+                    scope.set_extra("headers", dict(request.headers))
+                sentry_sdk.capture_exception(exc)
+        except Exception as sentry_error:
+            logger.warning(f"Failed to capture exception to Sentry: {sentry_error}")
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -30,8 +49,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests = defaultdict(list)
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip rate limiting for health check endpoints and during testing
-        if (request.url.path in ["/", "/health", "/docs", "/redoc", "/openapi.json"] or
+        # Skip rate limiting for health check endpoints, metrics and during testing
+        if (request.url.path in ["/", "/health", "/docs", "/redoc", "/openapi.json", "/metrics"] or
             os.environ.get("TESTING")):
             return await call_next(request)
         
@@ -84,6 +103,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     """
     Global error handling middleware for catching unhandled exceptions.
+    Integrates with Sentry for error tracking when configured.
     """
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
@@ -97,8 +117,20 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 content={"detail": exc.detail}
             )
         except Exception as exc:
-            # Log the error
-            logger.error(f"Unhandled error: {str(exc)}", exc_info=True)
+            # Log the error with full traceback
+            error_id = str(int(time.time() * 1000))  # Simple error ID for tracking
+            logger.error(
+                f"Unhandled error [ID: {error_id}]: {type(exc).__name__}: {str(exc)}",
+                exc_info=True,
+                extra={
+                    "error_id": error_id,
+                    "path": str(request.url.path),
+                    "method": request.method,
+                }
+            )
+            
+            # Capture to Sentry
+            capture_exception_to_sentry(exc, request)
             
             # Return a generic error response in production
             if settings.DEBUG:
@@ -107,37 +139,79 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     content={
                         "detail": "Internal server error",
                         "error": str(exc),
-                        "type": type(exc).__name__
+                        "type": type(exc).__name__,
+                        "error_id": error_id
                     }
                 )
             else:
                 return JSONResponse(
                     status_code=500,
-                    content={"detail": "Internal server error"}
+                    content={
+                        "detail": "Internal server error",
+                        "error_id": error_id
+                    }
                 )
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
-    Middleware for logging request and response information.
+    Middleware for structured logging of request and response information.
+    Logs include timing, status codes, and are formatted for log aggregation.
     """
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        # Skip logging for metrics endpoint to reduce noise
+        if request.url.path == "/metrics":
+            return await call_next(request)
+        
         start_time = time.time()
+        client_ip = self._get_client_ip(request)
         
         # Log request
-        logger.info(f"Request: {request.method} {request.url.path}")
+        logger.info(
+            f"Request started",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "client_ip": client_ip,
+            }
+        )
         
         response = await call_next(request)
         
-        # Log response
+        # Calculate processing time
         process_time = time.time() - start_time
-        logger.info(
-            f"Response: {request.method} {request.url.path} "
-            f"- Status: {response.status_code} - Time: {process_time:.4f}s"
+        process_time_ms = round(process_time * 1000, 2)
+        
+        # Log level based on status code
+        log_level = logging.INFO
+        if response.status_code >= 500:
+            log_level = logging.ERROR
+        elif response.status_code >= 400:
+            log_level = logging.WARNING
+        
+        # Log response with structured data
+        logger.log(
+            log_level,
+            f"Request completed: {request.method} {request.url.path} "
+            f"- Status: {response.status_code} - Time: {process_time_ms}ms",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": process_time_ms,
+                "client_ip": client_ip,
+            }
         )
         
         # Add processing time header
         response.headers["X-Process-Time"] = str(process_time)
         
         return response
+    
+    def _get_client_ip(self, request: Request) -> str:
+        """Get client IP from request, handling proxies."""
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        return request.client.host if request.client else "unknown"

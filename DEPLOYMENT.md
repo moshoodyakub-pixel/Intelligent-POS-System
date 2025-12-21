@@ -116,16 +116,84 @@ docker run -d --name frontend -p 8080:80 your-docker-user/frontend:abcdef1
 
 ## E — Post-Deploy Monitoring (First 30–60 Minutes)
 
+### Log Monitoring
+
 -   **Tail logs for errors:**
     -   `docker logs -f <frontend_container>`
+    -   `docker logs -f <backend_container>`
     -   `kubectl -n staging logs -f deployment/frontend`
--   **Error tracking (Sentry / Rollbar):**
-    -   Watch for spikes / new exceptions. Open Sentry and set a filter for "new in last 30m".
--   **Metrics:**
-    -   Check response time p95/p99, CPU, and memory on the new pods/containers.
-    -   Watch for increased 5xx rates or large request latencies.
--   **Health endpoint:**
-    -   `curl -f https://staging.yoursite.example/health` (should return HTTP 200)
+    -   `kubectl -n staging logs -f deployment/backend`
+
+### Error Tracking with Sentry
+
+The application is configured with Sentry integration for exception tracking:
+
+-   **Setup Sentry:**
+    1.  Create a project in [Sentry](https://sentry.io)
+    2.  Get your DSN from Project Settings → Client Keys
+    3.  Set environment variables:
+        ```bash
+        # Backend
+        export SENTRY_DSN=https://your-dsn@sentry.io/project-id
+        
+        # Frontend (React uses REACT_APP_ prefix)
+        export REACT_APP_SENTRY_DSN=https://your-dsn@sentry.io/project-id
+        ```
+
+-   **Monitor in Sentry:**
+    -   Watch for spikes / new exceptions
+    -   Set a filter for "new in last 30m" after deployment
+    -   Check the Issues dashboard for unhandled exceptions
+    -   Review error trends and performance data
+
+### Metrics Monitoring with Prometheus
+
+The backend exposes a `/metrics` endpoint for Prometheus scraping:
+
+-   **Access metrics:**
+    ```bash
+    curl https://staging.api.example/metrics
+    ```
+
+-   **Key metrics to monitor:**
+    -   `http_requests_total` - Total request count by method, endpoint, status code
+    -   `http_request_duration_seconds` - Request latency histogram (p50, p90, p95, p99)
+    -   `http_5xx_errors_total` - 5xx server error count
+    -   `http_errors_total` - All error count (4xx and 5xx)
+    -   `http_requests_active` - Currently active requests
+    -   `process_resident_memory_bytes` - Memory usage
+    -   `process_cpu_seconds_total` - CPU usage
+
+-   **Prometheus scrape config example:**
+    ```yaml
+    scrape_configs:
+      - job_name: 'pos-backend'
+        static_configs:
+          - targets: ['backend:8000']
+        metrics_path: /metrics
+    ```
+
+-   **Alerting thresholds (recommended):**
+    -   p95 latency > 1s for 5 minutes
+    -   5xx rate > 1% for 5 minutes
+    -   Memory usage > 80% for 10 minutes
+    -   CPU usage > 80% for 10 minutes
+
+### Health Endpoint
+
+-   **Health check:**
+    ```bash
+    curl -f https://staging.yoursite.example/health
+    ```
+    Expected response:
+    ```json
+    {
+      "status": "healthy",
+      "message": "API is running",
+      "version": "1.0.0",
+      "environment": "staging"
+    }
+    ```
 
 ## F — Rollback Procedure (Quick)
 
@@ -166,6 +234,9 @@ docker run -d --name frontend -p 8080:80 your-docker-user/frontend:abcdef1
 -   [ ] Create/Edit/Delete flow executed successfully
 -   [ ] No critical console errors
 -   [ ] Headless smoke tests passed (Playwright/Cypress)
+-   [ ] Verify Sentry is receiving events (if configured)
+-   [ ] Verify Prometheus metrics endpoint is accessible (`/metrics`)
 -   [ ] Monitor logs + Sentry for first 30–60m
+-   [ ] Check p95 latency and 5xx rate in metrics
 -   [ ] If issues found → rollback and create hotfix issue
 -   [ ] Create follow-up issues (frontend-test, audit follow-up)
