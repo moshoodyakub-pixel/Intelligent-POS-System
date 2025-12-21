@@ -210,9 +210,9 @@ The Intelligent POS System is a **production-ready** full-stack Point of Sale ap
 ### 🔶 Optional Before Production
 - [ ] Set up proper PostgreSQL database (default is SQLite)
 - [ ] Configure Docker Hub secrets for CD pipeline
-- [ ] Set `SECRET_KEY` to a secure random value
+- [x] Set `SECRET_KEY` to a secure random value (see `backend/.env.example`)
 - [ ] Configure `CORS_ORIGINS` to restrict to frontend domain
-- [ ] Set up database backup cron job
+- [x] Set up database backup cron job (run `scripts/setup-backup-cron.sh`)
 
 ### 📋 Post-Deployment Enhancements (Future)
 - [ ] Add E2E tests with Playwright/Cypress
