@@ -58,7 +58,7 @@ export default function Vendors() {
     }
   };
 
-  const openModal = (vendor = null) => {
+  const openModal = useCallback((vendor = null) => {
     if (vendor) {
       setFormData(vendor);
       setEditingId(vendor.id);
@@ -67,7 +67,7 @@ export default function Vendors() {
       setEditingId(null);
     }
     setModalIsOpen(true);
-  };
+  }, []);
 
   const closeModal = () => {
     setModalIsOpen(false);
