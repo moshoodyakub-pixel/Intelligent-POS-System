@@ -9,6 +9,65 @@ const api = axios.create({
   },
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login if unauthorized
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  login: async (username, password) => {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+    // Use a separate axios call since login needs form-urlencoded content type
+    // and shouldn't have Authorization header
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw { response: { data: error } };
+    }
+    return { data: await response.json() };
+  },
+  register: (data) => api.post('/auth/register', data),
+  getProfile: () => api.get('/auth/me'),
+  updateProfile: (data) => api.put('/auth/me', data),
+  getUsers: () => api.get('/auth/users'),
+  getUserById: (id) => api.get(`/auth/users/${id}`),
+  updateUser: (id, data) => api.put(`/auth/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`),
+};
+
 // Products API
 export const productsAPI = {
   getAll: () => api.get('/products/'),

@@ -2,8 +2,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
-from .models import Product, Vendor, Transaction, SalesForecast
-from .routes import products, vendors, transactions, forecasting
+from .models import Product, Vendor, Transaction, SalesForecast, User
+from .routes import products, vendors, transactions, forecasting, auth
 
 app = FastAPI(
     title="Intelligent POS System",
@@ -26,6 +26,7 @@ app.add_middleware(
 )
 
 # Include routes
+app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(vendors.router)
 app.include_router(transactions.router)

@@ -1,6 +1,60 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional, List
+from enum import Enum
+
+
+# User Role Enum
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    STAFF = "staff"
+
+
+# Authentication Schemas
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    role: Optional[str] = None
+
+
+class UserBase(BaseModel):
+    username: str
+    email: str
+    full_name: Optional[str] = None
+
+
+class UserCreate(UserBase):
+    password: str
+    role: Optional[UserRole] = UserRole.STAFF
+
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+    role: Optional[UserRole] = None
+    is_active: Optional[bool] = None
+
+
+class User(UserBase):
+    id: int
+    role: str
+    is_active: bool
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
 
 # Vendor Schemas
 class VendorBase(BaseModel):

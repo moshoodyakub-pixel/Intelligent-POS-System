@@ -21,7 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.main import app
 from app.database import get_db
-from app.models import Base, Vendor, Product, Transaction, SalesForecast
+from app.models import Base, Vendor, Product, Transaction, SalesForecast, User
+from app.auth import get_password_hash
 
 # Create test database engine
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -110,6 +111,29 @@ def sample_forecast_data():
 
 
 @pytest.fixture
+def sample_user_data():
+    """Sample user data for testing."""
+    return {
+        "username": "testuser",
+        "email": "testuser@example.com",
+        "password": "testpassword123",
+        "full_name": "Test User"
+    }
+
+
+@pytest.fixture
+def sample_admin_data():
+    """Sample admin user data for testing."""
+    return {
+        "username": "adminuser",
+        "email": "admin@example.com",
+        "password": "adminpassword123",
+        "full_name": "Admin User",
+        "role": "admin"
+    }
+
+
+@pytest.fixture
 def created_vendor(client, sample_vendor_data):
     """Create a vendor and return the response data."""
     response = client.post("/api/vendors/", json=sample_vendor_data)
@@ -122,3 +146,45 @@ def created_product(client, created_vendor, sample_product_data):
     sample_product_data["vendor_id"] = created_vendor["id"]
     response = client.post("/api/products/", json=sample_product_data)
     return response.json()
+
+
+@pytest.fixture
+def registered_user(client, sample_user_data):
+    """Register a user and return the response data."""
+    response = client.post("/api/auth/register", json=sample_user_data)
+    return response.json()
+
+
+@pytest.fixture
+def registered_admin(client, sample_admin_data):
+    """Register an admin user and return the response data."""
+    response = client.post("/api/auth/register", json=sample_admin_data)
+    return response.json()
+
+
+@pytest.fixture
+def auth_headers(client, sample_user_data):
+    """Get authentication headers for a regular user."""
+    # Register user first
+    client.post("/api/auth/register", json=sample_user_data)
+    # Login and get token
+    response = client.post(
+        "/api/auth/login",
+        data={"username": sample_user_data["username"], "password": sample_user_data["password"]}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def admin_auth_headers(client, sample_admin_data):
+    """Get authentication headers for an admin user."""
+    # Register admin first
+    client.post("/api/auth/register", json=sample_admin_data)
+    # Login and get token
+    response = client.post(
+        "/api/auth/login",
+        data={"username": sample_admin_data["username"], "password": sample_admin_data["password"]}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
