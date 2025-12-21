@@ -1,7 +1,26 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Generic, TypeVar
 from enum import Enum
+
+T = TypeVar('T')
+
+
+# Pagination Schema
+class PaginationMeta(BaseModel):
+    """Metadata for paginated responses."""
+    total: int = Field(..., description="Total number of items")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of items per page")
+    total_pages: int = Field(..., description="Total number of pages")
+    has_next: bool = Field(..., description="Whether there is a next page")
+    has_prev: bool = Field(..., description="Whether there is a previous page")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response wrapper."""
+    items: List[T]
+    pagination: PaginationMeta
 
 
 # User Role Enum
@@ -144,6 +163,106 @@ class SalesForecastUpdate(BaseModel):
 class SalesForecast(SalesForecastBase):
     id: int
     forecast_date: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+# ARIMA Forecast Schemas
+class ARIMAForecastRequest(BaseModel):
+    """Request schema for ARIMA forecast generation."""
+    product_id: Optional[int] = Field(None, description="Product ID to forecast (optional, forecasts all if not provided)")
+    periods: int = Field(default=7, ge=1, le=365, description="Number of periods to forecast")
+    confidence_level: float = Field(default=0.95, ge=0.5, le=0.99, description="Confidence level for intervals")
+
+
+class ARIMAForecastPoint(BaseModel):
+    """Single forecast point with confidence intervals."""
+    date: str
+    predicted_value: float
+    lower_bound: float
+    upper_bound: float
+
+
+class ARIMAForecastResponse(BaseModel):
+    """Response schema for ARIMA forecast."""
+    product_id: Optional[int]
+    product_name: Optional[str]
+    forecast_generated_at: datetime
+    periods: int
+    historical_data: List[dict]
+    forecast_data: List[ARIMAForecastPoint]
+    model_metrics: dict
+
+
+# Reports and Analytics Schemas
+class SalesReport(BaseModel):
+    """Sales report summary."""
+    total_revenue: float
+    total_transactions: int
+    average_transaction_value: float
+    top_products: List[dict]
+    sales_by_vendor: List[dict]
+    sales_trend: List[dict]
+    period_start: datetime
+    period_end: datetime
+
+
+class InventoryAlert(BaseModel):
+    """Inventory alert for low stock products."""
+    product_id: int
+    product_name: str
+    current_quantity: int
+    threshold: int
+    vendor_id: int
+    vendor_name: str
+    alert_level: str  # "critical", "warning", "low"
+
+
+class InventoryAlertResponse(BaseModel):
+    """Response schema for inventory alerts."""
+    alerts: List[InventoryAlert]
+    total_alerts: int
+    critical_count: int
+    warning_count: int
+    low_count: int
+
+
+class DashboardStats(BaseModel):
+    """Dashboard statistics summary."""
+    total_products: int
+    total_vendors: int
+    total_transactions: int
+    total_revenue: float
+    low_stock_count: int
+    recent_transactions: List[dict]
+    revenue_trend: List[dict]
+
+
+# Customer Management Schemas
+class CustomerBase(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+
+
+class CustomerCreate(CustomerBase):
+    pass
+
+
+class CustomerUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+
+
+class Customer(CustomerBase):
+    id: int
+    created_at: datetime
+    total_purchases: float = 0
+    transaction_count: int = 0
     
     class Config:
         from_attributes = True
