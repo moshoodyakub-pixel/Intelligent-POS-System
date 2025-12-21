@@ -96,7 +96,7 @@ def generate_arima_forecast(
         
         return forecast_data, metrics
         
-    except (ImportError, Exception) as e:
+    except (ImportError, ValueError, RuntimeError) as e:
         # Fallback to simple moving average forecast
         # This provides a reasonable estimate without full ARIMA
         window = min(7, len(values))
@@ -108,25 +108,16 @@ def generate_arima_forecast(
         # Calculate standard deviation for confidence intervals
         std_dev = np.std(values) if len(values) > 1 else 0
         
-        # Z-score for confidence level
-        from math import erf, sqrt
-        def norm_ppf(p):
-            """Approximate inverse of normal CDF."""
-            # Simple approximation
-            return sqrt(2) * erfinv(2 * p - 1) if p > 0 and p < 1 else 0
-        
-        def erfinv(x):
-            """Approximate inverse error function."""
-            a = 0.147
-            ln_part = np.log(1 - x**2)
-            first_part = (2 / (np.pi * a)) + (ln_part / 2)
-            return np.sign(x) * np.sqrt(np.sqrt(first_part**2 - ln_part/a) - first_part)
-        
+        # Z-score for confidence level (using pre-computed values for common levels)
         z_score = 1.96  # Approximate for 95% confidence
-        if confidence_level == 0.99:
+        if confidence_level >= 0.99:
             z_score = 2.576
-        elif confidence_level == 0.90:
+        elif confidence_level >= 0.95:
+            z_score = 1.96
+        elif confidence_level >= 0.90:
             z_score = 1.645
+        else:
+            z_score = 1.28  # ~80% confidence
         
         # Generate forecast dates
         last_date = df.index[-1]
