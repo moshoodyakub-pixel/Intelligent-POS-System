@@ -54,8 +54,10 @@ export const authAPI = {
       body: formData,
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw { response: { data: error } };
+      const errorData = await response.json();
+      const error = new Error(errorData.detail || 'Login failed');
+      error.response = { data: errorData };
+      throw error;
     }
     return { data: await response.json() };
   },
