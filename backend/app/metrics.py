@@ -82,11 +82,15 @@ class MetricsMiddleware(BaseHTTPMiddleware):
     
     def _normalize_path(self, path: str) -> str:
         """Normalize path to reduce metric cardinality by replacing IDs with placeholders."""
+        import re
+        # UUID pattern: 8-4-4-4-12 hex digits
+        uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.IGNORECASE)
+        
         parts = path.strip("/").split("/")
         normalized = []
-        for i, part in enumerate(parts):
-            # Check if part looks like an ID (numeric or UUID-like)
-            if part.isdigit() or (len(part) == 36 and "-" in part):
+        for part in parts:
+            # Check if part looks like an ID (numeric or UUID)
+            if part.isdigit() or uuid_pattern.match(part):
                 normalized.append("{id}")
             else:
                 normalized.append(part)

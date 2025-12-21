@@ -5,7 +5,7 @@ import os
 import time
 import traceback
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Optional
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -20,18 +20,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Import sentry_sdk at module level if available
+_sentry_sdk: Optional[object] = None
+if settings.SENTRY_DSN:
+    try:
+        import sentry_sdk as _sentry_sdk
+    except ImportError:
+        logger.warning("sentry-sdk not installed, Sentry integration disabled")
+
 
 def capture_exception_to_sentry(exc: Exception, request: Request = None):
     """Capture exception to Sentry if configured."""
-    if settings.SENTRY_DSN:
+    if _sentry_sdk is not None:
         try:
-            import sentry_sdk
-            with sentry_sdk.push_scope() as scope:
+            with _sentry_sdk.push_scope() as scope:
                 if request:
                     scope.set_tag("url", str(request.url))
                     scope.set_tag("method", request.method)
                     scope.set_extra("headers", dict(request.headers))
-                sentry_sdk.capture_exception(exc)
+                _sentry_sdk.capture_exception(exc)
         except Exception as sentry_error:
             logger.warning(f"Failed to capture exception to Sentry: {sentry_error}")
 

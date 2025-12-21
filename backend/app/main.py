@@ -106,7 +106,7 @@ def health_check():
 def metrics_endpoint():
     """Prometheus metrics endpoint for monitoring."""
     if not settings.METRICS_ENABLED:
-        return Response(content="Metrics disabled", status_code=404)
+        return Response(content="Metrics disabled", status_code=503)
     return Response(
         content=get_metrics(),
         media_type=get_metrics_content_type()

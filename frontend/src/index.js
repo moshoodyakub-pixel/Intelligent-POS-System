@@ -21,7 +21,6 @@ if (process.env.REACT_APP_SENTRY_DSN) {
       Sentry.replayIntegration(),
     ],
   });
-  console.log('Sentry initialized');
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
