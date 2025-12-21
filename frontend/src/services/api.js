@@ -70,40 +70,98 @@ export const authAPI = {
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
 };
 
-// Products API
+// Products API with pagination, search, filtering, and sorting
 export const productsAPI = {
-  getAll: () => api.get('/products/'),
+  getAll: (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.page_size) queryParams.append('page_size', params.page_size);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.vendor_id) queryParams.append('vendor_id', params.vendor_id);
+    if (params.min_price !== undefined) queryParams.append('min_price', params.min_price);
+    if (params.max_price !== undefined) queryParams.append('max_price', params.max_price);
+    if (params.min_quantity !== undefined) queryParams.append('min_quantity', params.min_quantity);
+    if (params.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params.sort_order) queryParams.append('sort_order', params.sort_order);
+    return api.get(`/products/?${queryParams.toString()}`);
+  },
   getById: (id) => api.get(`/products/${id}`),
   create: (data) => api.post('/products/', data),
   update: (id, data) => api.put(`/products/${id}`, data),
   delete: (id) => api.delete(`/products/${id}`),
+  getLowStock: (threshold = 10) => api.get(`/products/low-stock?threshold=${threshold}`),
 };
 
-// Vendors API
+// Vendors API with pagination, search, and sorting
 export const vendorsAPI = {
-  getAll: () => api.get('/vendors/'),
+  getAll: (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.page_size) queryParams.append('page_size', params.page_size);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params.sort_order) queryParams.append('sort_order', params.sort_order);
+    return api.get(`/vendors/?${queryParams.toString()}`);
+  },
   getById: (id) => api.get(`/vendors/${id}`),
   create: (data) => api.post('/vendors/', data),
   update: (id, data) => api.put(`/vendors/${id}`, data),
   delete: (id) => api.delete(`/vendors/${id}`),
 };
 
-// Transactions API
+// Transactions API with pagination and filtering
 export const transactionsAPI = {
-  getAll: () => api.get('/transactions/'),
+  getAll: (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.page_size) queryParams.append('page_size', params.page_size);
+    if (params.vendor_id) queryParams.append('vendor_id', params.vendor_id);
+    if (params.product_id) queryParams.append('product_id', params.product_id);
+    if (params.min_price !== undefined) queryParams.append('min_price', params.min_price);
+    if (params.max_price !== undefined) queryParams.append('max_price', params.max_price);
+    if (params.date_from) queryParams.append('date_from', params.date_from);
+    if (params.date_to) queryParams.append('date_to', params.date_to);
+    if (params.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params.sort_order) queryParams.append('sort_order', params.sort_order);
+    return api.get(`/transactions/?${queryParams.toString()}`);
+  },
   getById: (id) => api.get(`/transactions/${id}`),
   create: (data) => api.post('/transactions/', data),
   update: (id, data) => api.put(`/transactions/${id}`, data),
   delete: (id) => api.delete(`/transactions/${id}`),
+  getRecent: (days = 7, limit = 10) => api.get(`/transactions/recent?days=${days}&limit=${limit}`),
 };
 
-// Forecasting API
+// Forecasting API with ARIMA support
 export const forecastingAPI = {
-  getAll: () => api.get('/forecasting/sales'),
+  getAll: (params = {}) => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page);
+    if (params.page_size) queryParams.append('page_size', params.page_size);
+    if (params.product_id) queryParams.append('product_id', params.product_id);
+    return api.get(`/forecasting/sales?${queryParams.toString()}`);
+  },
   getById: (id) => api.get(`/forecasting/sales/${id}`),
   create: (data) => api.post('/forecasting/sales', data),
   update: (id, data) => api.put(`/forecasting/sales/${id}`, data),
   delete: (id) => api.delete(`/forecasting/sales/${id}`),
+  // ARIMA forecast generation
+  generateARIMAForecast: (data) => api.post('/forecasting/arima', data),
+};
+
+// Reports API for analytics
+export const reportsAPI = {
+  getSalesReport: (days = 30, vendorId = null) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('days', days);
+    if (vendorId) queryParams.append('vendor_id', vendorId);
+    return api.get(`/reports/sales?${queryParams.toString()}`);
+  },
+  getInventoryAlerts: (criticalThreshold = 5, warningThreshold = 15, lowThreshold = 25) => {
+    return api.get(`/reports/inventory-alerts?critical_threshold=${criticalThreshold}&warning_threshold=${warningThreshold}&low_threshold=${lowThreshold}`);
+  },
+  getDashboardStats: (days = 7) => api.get(`/reports/dashboard-stats?days=${days}`),
+  getProductAnalytics: (productId, days = 30) => api.get(`/reports/analytics/product/${productId}?days=${days}`),
 };
 
 export default api;
