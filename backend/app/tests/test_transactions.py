@@ -11,7 +11,9 @@ class TestTransactionsAPI:
         """Test getting transactions when database is empty."""
         response = client.get("/api/transactions/")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert data["items"] == []
+        assert data["pagination"]["total"] == 0
 
     def test_create_transaction(self, client, created_product, sample_transaction_data):
         """Test creating a new transaction."""
@@ -37,7 +39,7 @@ class TestTransactionsAPI:
         response = client.get("/api/transactions/")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
+        assert len(data["items"]) == 1
 
     def test_get_transaction_by_id(self, client, created_product, sample_transaction_data):
         """Test getting a specific transaction by ID."""
@@ -114,12 +116,26 @@ class TestTransactionsAPI:
             }
             client.post("/api/transactions/", json=transaction_data)
         
-        # Test with limit
-        response = client.get("/api/transactions/?limit=2")
+        # Test with page_size
+        response = client.get("/api/transactions/?page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["total"] == 5
         
-        # Test with skip
-        response = client.get("/api/transactions/?skip=2&limit=2")
+        # Test with page
+        response = client.get("/api/transactions/?page=2&page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["page"] == 2
+
+    def test_insufficient_stock(self, client, created_product, sample_transaction_data):
+        """Test that transaction fails when not enough stock."""
+        sample_transaction_data["vendor_id"] = created_product["vendor_id"]
+        sample_transaction_data["product_id"] = created_product["id"]
+        sample_transaction_data["quantity"] = 99999  # More than available
+        
+        response = client.post("/api/transactions/", json=sample_transaction_data)
+        assert response.status_code == 400
+        assert "Insufficient stock" in response.json()["detail"]

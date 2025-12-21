@@ -11,7 +11,9 @@ class TestVendorsAPI:
         """Test getting vendors when database is empty."""
         response = client.get("/api/vendors/")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert data["items"] == []
+        assert data["pagination"]["total"] == 0
 
     def test_create_vendor(self, client, sample_vendor_data):
         """Test creating a new vendor."""
@@ -33,8 +35,8 @@ class TestVendorsAPI:
         response = client.get("/api/vendors/")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["name"] == sample_vendor_data["name"]
+        assert len(data["items"]) == 1
+        assert data["items"][0]["name"] == sample_vendor_data["name"]
 
     def test_get_vendor_by_id(self, client, created_vendor):
         """Test getting a specific vendor by ID."""
@@ -102,12 +104,44 @@ class TestVendorsAPI:
             }
             client.post("/api/vendors/", json=vendor_data)
         
-        # Test with limit
-        response = client.get("/api/vendors/?limit=2")
+        # Test with page_size
+        response = client.get("/api/vendors/?page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["total"] == 5
         
-        # Test with skip
-        response = client.get("/api/vendors/?skip=2&limit=2")
+        # Test with page
+        response = client.get("/api/vendors/?page=2&page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["page"] == 2
+
+    def test_search_vendors(self, client):
+        """Test searching vendors."""
+        # Create vendors
+        for name in ["Acme Corp", "Beta Inc", "Acme Labs"]:
+            vendor_data = {
+                "name": name,
+                "email": f"{name.lower().replace(' ', '')}@test.com",
+                "phone": "123-456-7890",
+                "address": "123 Test St"
+            }
+            client.post("/api/vendors/", json=vendor_data)
+        
+        # Search for "Acme"
+        response = client.get("/api/vendors/?search=Acme")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+
+    def test_duplicate_vendor_email(self, client, sample_vendor_data):
+        """Test that duplicate email is rejected."""
+        # Create first vendor
+        client.post("/api/vendors/", json=sample_vendor_data)
+        
+        # Try to create another vendor with same email
+        response = client.post("/api/vendors/", json=sample_vendor_data)
+        assert response.status_code == 400
+        assert "already exists" in response.json()["detail"]

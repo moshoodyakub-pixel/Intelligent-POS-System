@@ -11,7 +11,9 @@ class TestForecastingAPI:
         """Test getting forecasts when database is empty."""
         response = client.get("/api/forecasting/sales")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert data["items"] == []
+        assert data["pagination"]["total"] == 0
 
     def test_create_forecast(self, client, created_product, sample_forecast_data):
         """Test creating a new forecast."""
@@ -33,7 +35,7 @@ class TestForecastingAPI:
         response = client.get("/api/forecasting/sales")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
+        assert len(data["items"]) == 1
 
     def test_get_forecast_by_id(self, client, created_product, sample_forecast_data):
         """Test getting a specific forecast by ID."""
@@ -106,12 +108,35 @@ class TestForecastingAPI:
             }
             client.post("/api/forecasting/sales", json=forecast_data)
         
-        # Test with limit
-        response = client.get("/api/forecasting/sales?limit=2")
+        # Test with page_size
+        response = client.get("/api/forecasting/sales?page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["total"] == 5
         
-        # Test with skip
-        response = client.get("/api/forecasting/sales?skip=2&limit=2")
+        # Test with page
+        response = client.get("/api/forecasting/sales?page=2&page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["page"] == 2
+
+    def test_arima_forecast_no_data(self, client):
+        """Test ARIMA forecast with no historical data."""
+        response = client.post("/api/forecasting/arima", json={
+            "periods": 7,
+            "confidence_level": 0.95
+        })
+        assert response.status_code == 400
+        assert "Insufficient" in response.json()["detail"]
+
+    def test_arima_forecast_product_not_found(self, client):
+        """Test ARIMA forecast with non-existent product."""
+        response = client.post("/api/forecasting/arima", json={
+            "product_id": 99999,
+            "periods": 7,
+            "confidence_level": 0.95
+        })
+        assert response.status_code == 404
+        assert "Product not found" in response.json()["detail"]

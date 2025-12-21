@@ -1,6 +1,7 @@
 """
 Middleware for rate limiting, error handling, and request logging.
 """
+import os
 import time
 from collections import defaultdict
 from typing import Callable
@@ -29,8 +30,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests = defaultdict(list)
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip rate limiting for health check endpoints
-        if request.url.path in ["/", "/health", "/docs", "/redoc", "/openapi.json"]:
+        # Skip rate limiting for health check endpoints and during testing
+        if (request.url.path in ["/", "/health", "/docs", "/redoc", "/openapi.json"] or
+            os.environ.get("TESTING")):
             return await call_next(request)
         
         client_ip = self._get_client_ip(request)

@@ -11,7 +11,9 @@ class TestProductsAPI:
         """Test getting products when database is empty."""
         response = client.get("/api/products/")
         assert response.status_code == 200
-        assert response.json() == []
+        data = response.json()
+        assert data["items"] == []
+        assert data["pagination"]["total"] == 0
 
     def test_create_product(self, client, created_vendor, sample_product_data):
         """Test creating a new product."""
@@ -32,8 +34,9 @@ class TestProductsAPI:
         response = client.get("/api/products/")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["name"] == created_product["name"]
+        assert len(data["items"]) == 1
+        assert data["items"][0]["name"] == created_product["name"]
+        assert data["pagination"]["total"] == 1
 
     def test_get_product_by_id(self, client, created_product):
         """Test getting a specific product by ID."""
@@ -102,15 +105,20 @@ class TestProductsAPI:
             }
             client.post("/api/products/", json=product_data)
         
-        # Test with limit
-        response = client.get("/api/products/?limit=2")
+        # Test with page_size
+        response = client.get("/api/products/?page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["total"] == 5
+        assert data["pagination"]["total_pages"] == 3
         
-        # Test with skip
-        response = client.get("/api/products/?skip=2&limit=2")
+        # Test with page
+        response = client.get("/api/products/?page=2&page_size=2")
         assert response.status_code == 200
-        assert len(response.json()) == 2
+        data = response.json()
+        assert len(data["items"]) == 2
+        assert data["pagination"]["page"] == 2
 
     def test_create_product_with_all_fields(self, client, created_vendor):
         """Test creating a product with all required fields."""
@@ -128,3 +136,46 @@ class TestProductsAPI:
         assert data["description"] == product_data["description"]
         assert data["price"] == product_data["price"]
         assert data["quantity"] == product_data["quantity"]
+
+    def test_search_products(self, client, created_vendor):
+        """Test searching products."""
+        # Create products with different names
+        for name in ["Apple iPhone", "Samsung Galaxy", "Apple Watch"]:
+            product_data = {
+                "name": name,
+                "description": "Test description",
+                "price": 999.99,
+                "quantity": 10,
+                "vendor_id": created_vendor["id"]
+            }
+            client.post("/api/products/", json=product_data)
+        
+        # Search for "Apple"
+        response = client.get("/api/products/?search=Apple")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 2
+
+    def test_filter_products_by_vendor(self, client, created_vendor, sample_vendor_data):
+        """Test filtering products by vendor."""
+        # Create another vendor
+        vendor2_data = {**sample_vendor_data, "name": "Vendor 2", "email": "vendor2@test.com"}
+        vendor2_response = client.post("/api/vendors/", json=vendor2_data)
+        vendor2 = vendor2_response.json()
+        
+        # Create products for each vendor
+        for vendor_id in [created_vendor["id"], vendor2["id"]]:
+            product_data = {
+                "name": f"Product for vendor {vendor_id}",
+                "description": "Test",
+                "price": 99.99,
+                "quantity": 10,
+                "vendor_id": vendor_id
+            }
+            client.post("/api/products/", json=product_data)
+        
+        # Filter by first vendor
+        response = client.get(f"/api/products/?vendor_id={created_vendor['id']}")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total"] == 1
