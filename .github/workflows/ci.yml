@@ -38,6 +38,7 @@ jobs:
         run: npm ci --prefix frontend
 
       - name: Run frontend tests
+        timeout-minutes: 10
         run: npm test --prefix frontend -- --watchAll=false
 
   build-docker:
