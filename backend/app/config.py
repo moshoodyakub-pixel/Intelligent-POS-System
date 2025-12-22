@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Intelligent POS System"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+    ENVIRONMENT: str = "development"
     
     # CORS
     CORS_ORIGINS: str = "*"
@@ -26,6 +27,11 @@ class Settings(BaseSettings):
     # Pagination defaults
     DEFAULT_PAGE_SIZE: int = 10
     MAX_PAGE_SIZE: int = 100
+    
+    # Monitoring & Observability
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_TRACES_SAMPLE_RATE: float = 1.0
+    METRICS_ENABLED: bool = True
 
     class Config:
         env_file = ".env"

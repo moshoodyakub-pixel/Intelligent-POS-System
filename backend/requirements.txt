@@ -13,3 +13,5 @@ python-jose[cryptography]
 pandas
 statsmodels
 bcrypt
+sentry-sdk[fastapi]==2.19.0
+prometheus-client==0.21.0
