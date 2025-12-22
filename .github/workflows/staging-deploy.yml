@@ -66,12 +66,9 @@ jobs:
       - name: Deploy to staging
         id: deploy
         run: |
-          # Default to 'local' if DOCKERHUB_USERNAME is not set
-          if [ -z "$DOCKERHUB_USERNAME" ]; then
-            export DOCKERHUB_USERNAME="local"
-          fi
-          export IMAGE_TAG=latest
-          docker compose -f docker-compose.staging.yml up -d --wait --wait-timeout 120
+          # Default to 'local' if DOCKERHUB_USERNAME is not set for docker compose
+          COMPOSE_DOCKERHUB_USERNAME="${DOCKERHUB_USERNAME:-local}"
+          IMAGE_TAG=latest DOCKERHUB_USERNAME="$COMPOSE_DOCKERHUB_USERNAME" docker compose -f docker-compose.staging.yml up -d --wait --wait-timeout 120
           echo "backend_url=http://localhost:8000" >> $GITHUB_OUTPUT
           echo "frontend_url=http://localhost:3000" >> $GITHUB_OUTPUT
 
