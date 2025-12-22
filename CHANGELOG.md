@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-12-22
+
+### Added
+- **ARIMA Forecasting**: Implemented ARIMA-based sales prediction using statsmodels with confidence intervals and fallback to moving average when data is insufficient.
+- **Forecasting Dashboard**: Bar chart visualization with historical data vs forecast, confidence range display, and detailed forecast table.
+- **JWT Authentication**: User registration and login endpoints (`/api/auth/register`, `/api/auth/login`) with password hashing via bcrypt.
+- **Role-Based Access Control (RBAC)**: Admin and Staff roles with endpoint protection based on user permissions.
+- **Frontend Auth Integration**: Login/Register pages with form validation, protected routes via AuthContext, and token persistence.
+- **Rate Limiting**: Middleware limiting requests to 100 per minute per client.
+- **Prometheus Metrics**: `/metrics` endpoint exposing request counts, latency histograms, and error rates.
+- **Reports API**: Sales reports, inventory alerts, dashboard stats, and product analytics endpoints.
+- **Loading States**: Loading spinners implemented across all frontend components.
+- **Toast Notifications**: Notification system for user feedback in Forecasting and other components.
+
+### Changed
+- **Pagination Support**: Full pagination with `page`, `page_size`, and response metadata across all list endpoints.
+- **Search & Filtering**: Enhanced search for products and vendors with filter support.
+- **Sorting**: Added `sort_by` and `sort_order` parameters to list endpoints.
+- **Environment Configuration**: Sensible defaults in `config.py` with environment variable overrides.
+- **CORS Configuration**: Configurable via `CORS_ORIGINS` environment variable.
+
+### Fixed
+- **Transaction Delete Endpoint**: Resolved issue with transaction deletion.
+- **Error Handling**: Improved HTTPException handling throughout the backend.
+
 ## [1.0.0] - 2025-11-26
 
 ### Fixed
