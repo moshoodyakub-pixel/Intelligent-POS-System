@@ -40,6 +40,18 @@ api.interceptors.response.use(
   }
 );
 
+// Helper function for file downloads with authentication
+const downloadFile = async (endpoint, queryParams = {}) => {
+  const token = localStorage.getItem('access_token');
+  const queryString = new URLSearchParams(queryParams).toString();
+  const url = queryString ? `${API_BASE_URL}${endpoint}?${queryString}` : `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.blob();
+};
+
 // Auth API
 export const authAPI = {
   login: async (username, password) => {
@@ -132,12 +144,7 @@ export const transactionsAPI = {
   getRecent: (days = 7, limit = 10) => api.get(`/transactions/recent?days=${days}&limit=${limit}`),
   // Receipt generation
   getReceiptData: (id) => api.get(`/transactions/${id}/receipt-data`),
-  downloadReceipt: (id) => {
-    const token = localStorage.getItem('access_token');
-    return fetch(`${API_BASE_URL}/transactions/${id}/receipt`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(response => response.blob());
-  },
+  downloadReceipt: (id) => downloadFile(`/transactions/${id}/receipt`),
 };
 
 // Forecasting API with ARIMA support
@@ -170,37 +177,19 @@ export const reportsAPI = {
   },
   getDashboardStats: (days = 7) => api.get(`/reports/dashboard-stats?days=${days}`),
   getProductAnalytics: (productId, days = 30) => api.get(`/reports/analytics/product/${productId}?days=${days}`),
-  // Export functions
+  // Export functions using the helper
   exportSalesPDF: (days = 30, vendorId = null) => {
-    const queryParams = new URLSearchParams();
-    queryParams.append('days', days);
-    if (vendorId) queryParams.append('vendor_id', vendorId);
-    const token = localStorage.getItem('access_token');
-    return fetch(`${API_BASE_URL}/reports/export/sales/pdf?${queryParams.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(response => response.blob());
+    const params = { days };
+    if (vendorId) params.vendor_id = vendorId;
+    return downloadFile('/reports/export/sales/pdf', params);
   },
   exportSalesExcel: (days = 30, vendorId = null) => {
-    const queryParams = new URLSearchParams();
-    queryParams.append('days', days);
-    if (vendorId) queryParams.append('vendor_id', vendorId);
-    const token = localStorage.getItem('access_token');
-    return fetch(`${API_BASE_URL}/reports/export/sales/excel?${queryParams.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(response => response.blob());
+    const params = { days };
+    if (vendorId) params.vendor_id = vendorId;
+    return downloadFile('/reports/export/sales/excel', params);
   },
-  exportInventoryPDF: () => {
-    const token = localStorage.getItem('access_token');
-    return fetch(`${API_BASE_URL}/reports/export/inventory/pdf`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(response => response.blob());
-  },
-  exportInventoryExcel: () => {
-    const token = localStorage.getItem('access_token');
-    return fetch(`${API_BASE_URL}/reports/export/inventory/excel`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(response => response.blob());
-  },
+  exportInventoryPDF: () => downloadFile('/reports/export/inventory/pdf'),
+  exportInventoryExcel: () => downloadFile('/reports/export/inventory/excel'),
 };
 
 export default api;

@@ -349,7 +349,8 @@ def get_receipt_data(transaction_id: int, db: Session = Depends(get_db)):
     vendor = db.query(Vendor).filter(Vendor.id == transaction.vendor_id).first()
     
     return {
-        "receipt_number": transaction.id,
+        "id": transaction.id,  # Transaction ID for API calls
+        "receipt_number": transaction.id,  # Display as receipt number
         "transaction_date": transaction.transaction_date.isoformat(),
         "vendor": {
             "id": vendor.id if vendor else None,

@@ -307,7 +307,7 @@ export default function Transactions() {
               <button className="btn-print" onClick={handlePrintReceipt}>🖨️ Print</button>
               <button 
                 className="btn-download-pdf" 
-                onClick={() => handleDownloadReceipt(receiptData.receipt_number)}
+                onClick={() => handleDownloadReceipt(receiptData.id)}
               >
                 📥 Download PDF
               </button>

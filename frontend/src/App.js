@@ -61,7 +61,7 @@ function ErrorFallback({ error, resetError }) {
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, isAuthenticated } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   // If not authenticated, show login/register routes only
   if (!isAuthenticated()) {

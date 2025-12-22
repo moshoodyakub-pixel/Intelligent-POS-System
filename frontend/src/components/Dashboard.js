@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { productsAPI, vendorsAPI, transactionsAPI, forecastingAPI, reportsAPI } from '../services/api';
 import './Dashboard.css';
 
@@ -16,17 +16,12 @@ export default function Dashboard() {
   const [notification, setNotification] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [lowStockAlerts, setLowStockAlerts] = useState([]);
-  const [revenueTrend, setRevenueTrend] = useState([]);
   const [exporting, setExporting] = useState(null);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const showNotification = (message, type = 'info') => {
+  const showNotification = useCallback((message, type = 'info') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
-  };
+  }, []);
 
   const handleExport = async (type, format) => {
     try {
@@ -71,7 +66,7 @@ export default function Dashboard() {
     }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       const [products, vendors, transactions, forecasts, dashboardStats, inventoryAlerts] = await Promise.all([
@@ -94,7 +89,6 @@ export default function Dashboard() {
 
       if (dashboardStats?.data) {
         setRecentTransactions(dashboardStats.data.recent_transactions || []);
-        setRevenueTrend(dashboardStats.data.revenue_trend || []);
       }
 
       if (inventoryAlerts?.data) {
@@ -114,7 +108,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   if (loading) {
     return (

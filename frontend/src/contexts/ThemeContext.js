@@ -8,7 +8,16 @@ export function ThemeProvider({ children }) {
     const savedTheme = localStorage.getItem('pos-theme');
     // Check system preference if no saved theme
     if (!savedTheme) {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      try {
+        // Safely check for matchMedia support and system preference
+        if (typeof window !== 'undefined' && window.matchMedia) {
+          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+      } catch (e) {
+        // Fallback if matchMedia throws or is not supported
+        console.warn('matchMedia not supported, defaulting to light theme');
+      }
+      return 'light';
     }
     return savedTheme;
   });
