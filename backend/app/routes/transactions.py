@@ -1,8 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc
 from typing import Optional
 from datetime import datetime, timedelta
+from io import BytesIO
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+
 from ..database import get_db
 from ..models import Transaction, Product, Vendor
 from ..schemas import TransactionCreate, TransactionUpdate, Transaction as TransactionSchema, PaginatedResponse, PaginationMeta
@@ -197,3 +206,164 @@ def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     db.delete(transaction)
     db.commit()
     return {"message": "Transaction deleted successfully"}
+
+
+# Generate receipt for a transaction
+@router.get("/{transaction_id}/receipt")
+def generate_receipt(transaction_id: int, db: Session = Depends(get_db)):
+    """
+    Generate a printable PDF receipt for a transaction.
+    
+    - **transaction_id**: The ID of the transaction
+    """
+    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    product = db.query(Product).filter(Product.id == transaction.product_id).first()
+    vendor = db.query(Vendor).filter(Vendor.id == transaction.vendor_id).first()
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=(4*inch, 8*inch),  # Receipt size
+        topMargin=0.3*inch, 
+        bottomMargin=0.3*inch,
+        leftMargin=0.3*inch,
+        rightMargin=0.3*inch
+    )
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'ReceiptTitle',
+        parent=styles['Heading1'],
+        fontSize=14,
+        alignment=1,  # Center
+        spaceAfter=6
+    )
+    center_style = ParagraphStyle(
+        'Center',
+        parent=styles['Normal'],
+        fontSize=9,
+        alignment=1
+    )
+    normal_style = ParagraphStyle(
+        'ReceiptNormal',
+        parent=styles['Normal'],
+        fontSize=9
+    )
+    
+    # Header
+    elements.append(Paragraph("🎯 Intelligent POS System", title_style))
+    elements.append(Paragraph("SALES RECEIPT", center_style))
+    elements.append(Spacer(1, 10))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.black))
+    elements.append(Spacer(1, 10))
+    
+    # Transaction details
+    elements.append(Paragraph(f"<b>Receipt #:</b> {transaction.id}", normal_style))
+    elements.append(Paragraph(
+        f"<b>Date:</b> {transaction.transaction_date.strftime('%Y-%m-%d %H:%M')}",
+        normal_style
+    ))
+    elements.append(Paragraph(f"<b>Vendor:</b> {vendor.name if vendor else 'N/A'}", normal_style))
+    elements.append(Spacer(1, 10))
+    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey))
+    elements.append(Spacer(1, 10))
+    
+    # Item details
+    item_data = [
+        ["Item", "Qty", "Price"],
+        [
+            product.name if product else "Unknown",
+            str(transaction.quantity),
+            f"${product.price if product else 0:.2f}"
+        ]
+    ]
+    
+    item_table = Table(item_data, colWidths=[1.8*inch, 0.6*inch, 0.8*inch])
+    item_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 4),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, colors.black)
+    ]))
+    elements.append(item_table)
+    elements.append(Spacer(1, 10))
+    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.grey))
+    elements.append(Spacer(1, 10))
+    
+    # Total
+    total_style = ParagraphStyle(
+        'TotalStyle',
+        parent=styles['Normal'],
+        fontSize=12,
+        alignment=2  # Right
+    )
+    elements.append(Paragraph(f"<b>TOTAL: ${transaction.total_price:.2f}</b>", total_style))
+    elements.append(Spacer(1, 20))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.black))
+    elements.append(Spacer(1, 15))
+    
+    # Footer
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        alignment=1,
+        textColor=colors.grey
+    )
+    elements.append(Paragraph("Thank you for your purchase!", center_style))
+    elements.append(Spacer(1, 5))
+    elements.append(Paragraph("Intelligent POS System", footer_style))
+    elements.append(Paragraph("www.intelligent-pos.com", footer_style))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    
+    filename = f"receipt_{transaction_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# Get receipt data as JSON (for frontend rendering)
+@router.get("/{transaction_id}/receipt-data")
+def get_receipt_data(transaction_id: int, db: Session = Depends(get_db)):
+    """
+    Get receipt data as JSON for frontend rendering.
+    
+    - **transaction_id**: The ID of the transaction
+    """
+    transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    product = db.query(Product).filter(Product.id == transaction.product_id).first()
+    vendor = db.query(Vendor).filter(Vendor.id == transaction.vendor_id).first()
+    
+    return {
+        "receipt_number": transaction.id,
+        "transaction_date": transaction.transaction_date.isoformat(),
+        "vendor": {
+            "id": vendor.id if vendor else None,
+            "name": vendor.name if vendor else "N/A"
+        },
+        "item": {
+            "id": product.id if product else None,
+            "name": product.name if product else "Unknown",
+            "quantity": transaction.quantity,
+            "unit_price": product.price if product else 0
+        },
+        "total_price": transaction.total_price,
+        "company": {
+            "name": "Intelligent POS System",
+            "website": "www.intelligent-pos.com"
+        }
+    }

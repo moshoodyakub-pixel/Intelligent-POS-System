@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import Dashboard from './components/Dashboard';
 import Products from './components/Products';
 import Vendors from './components/Vendors';
@@ -60,6 +61,7 @@ function ErrorFallback({ error, resetError }) {
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout, isAuthenticated } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   // If not authenticated, show login/register routes only
   if (!isAuthenticated()) {
@@ -129,6 +131,14 @@ function AppContent() {
         <header className="app-header">
           <h1>Intelligent POS System</h1>
           <div className="header-info">
+            <button 
+              className="theme-toggle" 
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
             <span className="user-info">
               {user?.full_name || user?.username}
               {user?.role === 'admin' && <span className="role-badge">Admin</span>}
@@ -185,11 +195,13 @@ function App() {
         console.error('Error caught by Sentry boundary:', error);
       }}
     >
-      <Router>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </Router>
+      <ThemeProvider>
+        <Router>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </Router>
+      </ThemeProvider>
     </Sentry.ErrorBoundary>
   );
 }

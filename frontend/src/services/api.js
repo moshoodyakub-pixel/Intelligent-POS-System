@@ -130,6 +130,14 @@ export const transactionsAPI = {
   update: (id, data) => api.put(`/transactions/${id}`, data),
   delete: (id) => api.delete(`/transactions/${id}`),
   getRecent: (days = 7, limit = 10) => api.get(`/transactions/recent?days=${days}&limit=${limit}`),
+  // Receipt generation
+  getReceiptData: (id) => api.get(`/transactions/${id}/receipt-data`),
+  downloadReceipt: (id) => {
+    const token = localStorage.getItem('access_token');
+    return fetch(`${API_BASE_URL}/transactions/${id}/receipt`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(response => response.blob());
+  },
 };
 
 // Forecasting API with ARIMA support
@@ -162,6 +170,37 @@ export const reportsAPI = {
   },
   getDashboardStats: (days = 7) => api.get(`/reports/dashboard-stats?days=${days}`),
   getProductAnalytics: (productId, days = 30) => api.get(`/reports/analytics/product/${productId}?days=${days}`),
+  // Export functions
+  exportSalesPDF: (days = 30, vendorId = null) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('days', days);
+    if (vendorId) queryParams.append('vendor_id', vendorId);
+    const token = localStorage.getItem('access_token');
+    return fetch(`${API_BASE_URL}/reports/export/sales/pdf?${queryParams.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(response => response.blob());
+  },
+  exportSalesExcel: (days = 30, vendorId = null) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('days', days);
+    if (vendorId) queryParams.append('vendor_id', vendorId);
+    const token = localStorage.getItem('access_token');
+    return fetch(`${API_BASE_URL}/reports/export/sales/excel?${queryParams.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(response => response.blob());
+  },
+  exportInventoryPDF: () => {
+    const token = localStorage.getItem('access_token');
+    return fetch(`${API_BASE_URL}/reports/export/inventory/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(response => response.blob());
+  },
+  exportInventoryExcel: () => {
+    const token = localStorage.getItem('access_token');
+    return fetch(`${API_BASE_URL}/reports/export/inventory/excel`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then(response => response.blob());
+  },
 };
 
 export default api;

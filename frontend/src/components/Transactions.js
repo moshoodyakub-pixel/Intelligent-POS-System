@@ -11,6 +11,8 @@ export default function Transactions() {
   const [products, setProducts] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
@@ -84,6 +86,38 @@ export default function Transactions() {
     }
   }, []);
 
+  const handleViewReceipt = useCallback(async (id) => {
+    try {
+      const response = await transactionsAPI.getReceiptData(id);
+      setReceiptData(response.data);
+      setReceiptModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching receipt:', err);
+      setError('Failed to load receipt');
+    }
+  }, []);
+
+  const handleDownloadReceipt = useCallback(async (id) => {
+    try {
+      const blob = await transactionsAPI.downloadReceipt(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `receipt_${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading receipt:', err);
+      setError('Failed to download receipt');
+    }
+  }, []);
+
+  const handlePrintReceipt = useCallback(() => {
+    window.print();
+  }, []);
+
   const getProductName = useCallback((id) => products.find(p => p.id === id)?.name || 'Unknown', [products]);
   const getVendorName = useCallback((id) => vendors.find(v => v.id === id)?.name || 'Unknown', [vendors]);
 
@@ -97,10 +131,20 @@ export default function Transactions() {
     {
       Header: 'Actions',
       Cell: ({ row }) => (
-        <button className="btn-delete" onClick={() => handleDelete(row.original.id)}>Delete</button>
+        <div className="action-buttons">
+          <button className="btn-receipt" onClick={() => handleViewReceipt(row.original.id)} title="View Receipt">
+            🧾
+          </button>
+          <button className="btn-download" onClick={() => handleDownloadReceipt(row.original.id)} title="Download PDF">
+            📥
+          </button>
+          <button className="btn-delete" onClick={() => handleDelete(row.original.id)} title="Delete">
+            🗑️
+          </button>
+        </div>
       ),
     },
-  ], [getVendorName, getProductName, handleDelete]);
+  ], [getVendorName, getProductName, handleDelete, handleViewReceipt, handleDownloadReceipt]);
 
   const {
     getTableProps,
@@ -199,6 +243,78 @@ export default function Transactions() {
             <button type="button" className="btn-cancel" onClick={closeModal}>Cancel</button>
           </div>
         </form>
+      </Modal>
+
+      {/* Receipt Modal */}
+      <Modal
+        isOpen={receiptModalOpen}
+        onRequestClose={() => setReceiptModalOpen(false)}
+        contentLabel="Receipt"
+        className="receipt-modal"
+        overlayClassName="overlay"
+      >
+        {receiptData && (
+          <div className="receipt-content">
+            <div className="receipt-header">
+              <h2>🎯 Intelligent POS System</h2>
+              <p className="receipt-title">SALES RECEIPT</p>
+            </div>
+            
+            <div className="receipt-divider"></div>
+            
+            <div className="receipt-details">
+              <p><strong>Receipt #:</strong> {receiptData.receipt_number}</p>
+              <p><strong>Date:</strong> {new Date(receiptData.transaction_date).toLocaleString()}</p>
+              <p><strong>Vendor:</strong> {receiptData.vendor?.name}</p>
+            </div>
+            
+            <div className="receipt-divider"></div>
+            
+            <div className="receipt-items">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{receiptData.item?.name}</td>
+                    <td>{receiptData.item?.quantity}</td>
+                    <td>${receiptData.item?.unit_price?.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="receipt-divider"></div>
+            
+            <div className="receipt-total">
+              <strong>TOTAL: ${receiptData.total_price?.toFixed(2)}</strong>
+            </div>
+            
+            <div className="receipt-divider"></div>
+            
+            <div className="receipt-footer">
+              <p>Thank you for your purchase!</p>
+              <p className="company-info">{receiptData.company?.name}</p>
+              <p className="company-info">{receiptData.company?.website}</p>
+            </div>
+            
+            <div className="receipt-actions">
+              <button className="btn-print" onClick={handlePrintReceipt}>🖨️ Print</button>
+              <button 
+                className="btn-download-pdf" 
+                onClick={() => handleDownloadReceipt(receiptData.receipt_number)}
+              >
+                📥 Download PDF
+              </button>
+              <button className="btn-close" onClick={() => setReceiptModalOpen(false)}>Close</button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -1,12 +1,24 @@
 """
 Reports and Analytics API endpoints for the POS system.
 Provides sales reports, inventory alerts, and dashboard statistics.
+Includes PDF and Excel export functionality.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from typing import Optional
 from datetime import datetime, timedelta
+from io import BytesIO
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
 from ..database import get_db
 from ..models import Transaction, Product, Vendor, Customer
 from ..schemas import (
@@ -317,3 +329,386 @@ def get_product_analytics(
         },
         "sales_trend": sales_trend
     }
+
+
+def _generate_sales_report_data(db: Session, days: int, vendor_id: Optional[int] = None):
+    """Helper function to generate sales report data for export."""
+    period_end = datetime.utcnow()
+    period_start = period_end - timedelta(days=days)
+    
+    query = db.query(Transaction).filter(
+        Transaction.transaction_date >= period_start,
+        Transaction.transaction_date <= period_end
+    )
+    
+    if vendor_id:
+        query = query.filter(Transaction.vendor_id == vendor_id)
+    
+    transactions = query.all()
+    
+    total_revenue = sum(t.total_price for t in transactions)
+    total_transactions = len(transactions)
+    avg_transaction = total_revenue / total_transactions if total_transactions > 0 else 0
+    
+    # Top products
+    product_sales = {}
+    for t in transactions:
+        product = db.query(Product).filter(Product.id == t.product_id).first()
+        if product:
+            if product.id not in product_sales:
+                product_sales[product.id] = {
+                    "product_name": product.name,
+                    "total_quantity": 0,
+                    "total_revenue": 0
+                }
+            product_sales[product.id]["total_quantity"] += t.quantity
+            product_sales[product.id]["total_revenue"] += t.total_price
+    
+    top_products = sorted(
+        product_sales.values(),
+        key=lambda x: x["total_revenue"],
+        reverse=True
+    )[:10]
+    
+    return {
+        "period_start": period_start,
+        "period_end": period_end,
+        "total_revenue": round(total_revenue, 2),
+        "total_transactions": total_transactions,
+        "avg_transaction": round(avg_transaction, 2),
+        "top_products": top_products,
+        "transactions": transactions
+    }
+
+
+@router.get("/export/sales/pdf")
+def export_sales_report_pdf(
+    days: int = Query(30, ge=1, le=365, description="Number of days for the report"),
+    vendor_id: Optional[int] = Query(None, description="Filter by vendor ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Export sales report as PDF.
+    
+    - **days**: Number of days to include in the report (default: 30)
+    - **vendor_id**: Optional vendor filter
+    """
+    data = _generate_sales_report_data(db, days, vendor_id)
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=20,
+        alignment=1  # Center
+    )
+    
+    # Title
+    elements.append(Paragraph("Sales Report", title_style))
+    elements.append(Paragraph(
+        f"Period: {data['period_start'].strftime('%Y-%m-%d')} to {data['period_end'].strftime('%Y-%m-%d')}",
+        styles['Normal']
+    ))
+    elements.append(Spacer(1, 20))
+    
+    # Summary Table
+    summary_data = [
+        ["Metric", "Value"],
+        ["Total Revenue", f"${data['total_revenue']:,.2f}"],
+        ["Total Transactions", str(data['total_transactions'])],
+        ["Average Transaction", f"${data['avg_transaction']:,.2f}"]
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#dee2e6'))
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 30))
+    
+    # Top Products Table
+    if data['top_products']:
+        elements.append(Paragraph("Top Selling Products", styles['Heading2']))
+        elements.append(Spacer(1, 10))
+        
+        products_data = [["Product Name", "Quantity Sold", "Revenue"]]
+        for p in data['top_products']:
+            products_data.append([
+                p['product_name'],
+                str(p['total_quantity']),
+                f"${p['total_revenue']:,.2f}"
+            ])
+        
+        products_table = Table(products_data, colWidths=[3*inch, 1.5*inch, 1.5*inch])
+        products_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#dee2e6')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')])
+        ]))
+        elements.append(products_table)
+    
+    # Footer
+    elements.append(Spacer(1, 30))
+    elements.append(Paragraph(
+        f"Generated on {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} | Intelligent POS System",
+        ParagraphStyle('Footer', fontSize=8, textColor=colors.grey)
+    ))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    
+    filename = f"sales_report_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/export/sales/excel")
+def export_sales_report_excel(
+    days: int = Query(30, ge=1, le=365, description="Number of days for the report"),
+    vendor_id: Optional[int] = Query(None, description="Filter by vendor ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Export sales report as Excel file.
+    
+    - **days**: Number of days to include in the report (default: 30)
+    - **vendor_id**: Optional vendor filter
+    """
+    data = _generate_sales_report_data(db, days, vendor_id)
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sales Report"
+    
+    # Styles
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws.merge_cells('A1:D1')
+    ws['A1'] = "Sales Report"
+    ws['A1'].font = Font(bold=True, size=16)
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    ws.merge_cells('A2:D2')
+    ws['A2'] = f"Period: {data['period_start'].strftime('%Y-%m-%d')} to {data['period_end'].strftime('%Y-%m-%d')}"
+    ws['A2'].alignment = Alignment(horizontal='center')
+    
+    # Summary section
+    ws['A4'] = "Summary"
+    ws['A4'].font = Font(bold=True, size=12)
+    
+    summary_headers = ['Metric', 'Value']
+    summary_data = [
+        ['Total Revenue', f"${data['total_revenue']:,.2f}"],
+        ['Total Transactions', data['total_transactions']],
+        ['Average Transaction', f"${data['avg_transaction']:,.2f}"]
+    ]
+    
+    for col, header in enumerate(summary_headers, 1):
+        cell = ws.cell(row=5, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    for row_idx, row_data in enumerate(summary_data, 6):
+        for col_idx, value in enumerate(row_data, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.border = border
+    
+    # Top Products section
+    ws['A10'] = "Top Selling Products"
+    ws['A10'].font = Font(bold=True, size=12)
+    
+    product_headers = ['Product Name', 'Quantity Sold', 'Revenue']
+    for col, header in enumerate(product_headers, 1):
+        cell = ws.cell(row=11, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = Alignment(horizontal='center')
+    
+    for row_idx, product in enumerate(data['top_products'], 12):
+        ws.cell(row=row_idx, column=1, value=product['product_name']).border = border
+        ws.cell(row=row_idx, column=2, value=product['total_quantity']).border = border
+        ws.cell(row=row_idx, column=3, value=f"${product['total_revenue']:,.2f}").border = border
+    
+    # Adjust column widths
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+    
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"sales_report_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/export/inventory/pdf")
+def export_inventory_alerts_pdf(
+    critical_threshold: int = Query(5, ge=0, description="Critical stock level"),
+    warning_threshold: int = Query(15, ge=0, description="Warning stock level"),
+    low_threshold: int = Query(25, ge=0, description="Low stock level"),
+    db: Session = Depends(get_db)
+):
+    """Export inventory alerts as PDF."""
+    # Get products with low stock
+    products = db.query(Product).filter(Product.quantity <= low_threshold).all()
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        spaceAfter=20,
+        alignment=1
+    )
+    
+    elements.append(Paragraph("Inventory Alerts Report", title_style))
+    elements.append(Paragraph(
+        f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}",
+        styles['Normal']
+    ))
+    elements.append(Spacer(1, 20))
+    
+    if products:
+        data = [["Product", "Current Stock", "Vendor", "Alert Level"]]
+        for p in products:
+            vendor = db.query(Vendor).filter(Vendor.id == p.vendor_id).first()
+            if p.quantity <= critical_threshold:
+                level = "CRITICAL"
+            elif p.quantity <= warning_threshold:
+                level = "WARNING"
+            else:
+                level = "LOW"
+            data.append([p.name, str(p.quantity), vendor.name if vendor else "N/A", level])
+        
+        table = Table(data, colWidths=[2.5*inch, 1.5*inch, 2*inch, 1.5*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#dee2e6'))
+        ]))
+        elements.append(table)
+    else:
+        elements.append(Paragraph("✓ All products are well stocked!", styles['Normal']))
+    
+    doc.build(elements)
+    buffer.seek(0)
+    
+    filename = f"inventory_alerts_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/export/inventory/excel")
+def export_inventory_alerts_excel(
+    critical_threshold: int = Query(5, ge=0, description="Critical stock level"),
+    warning_threshold: int = Query(15, ge=0, description="Warning stock level"),
+    low_threshold: int = Query(25, ge=0, description="Low stock level"),
+    db: Session = Depends(get_db)
+):
+    """Export inventory alerts as Excel file."""
+    products = db.query(Product).filter(Product.quantity <= low_threshold).all()
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Inventory Alerts"
+    
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="667eea", end_color="667eea", fill_type="solid")
+    critical_fill = PatternFill(start_color="dc3545", end_color="dc3545", fill_type="solid")
+    warning_fill = PatternFill(start_color="ffc107", end_color="ffc107", fill_type="solid")
+    
+    ws.merge_cells('A1:D1')
+    ws['A1'] = "Inventory Alerts Report"
+    ws['A1'].font = Font(bold=True, size=16)
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    headers = ['Product', 'Current Stock', 'Vendor', 'Alert Level']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+    
+    for row_idx, p in enumerate(products, 4):
+        vendor = db.query(Vendor).filter(Vendor.id == p.vendor_id).first()
+        if p.quantity <= critical_threshold:
+            level = "CRITICAL"
+            fill = critical_fill
+        elif p.quantity <= warning_threshold:
+            level = "WARNING"
+            fill = warning_fill
+        else:
+            level = "LOW"
+            fill = None
+        
+        ws.cell(row=row_idx, column=1, value=p.name)
+        ws.cell(row=row_idx, column=2, value=p.quantity)
+        ws.cell(row=row_idx, column=3, value=vendor.name if vendor else "N/A")
+        level_cell = ws.cell(row=row_idx, column=4, value=level)
+        if fill:
+            level_cell.fill = fill
+            level_cell.font = Font(bold=True, color="FFFFFF" if level == "CRITICAL" else "000000")
+    
+    ws.column_dimensions['A'].width = 30
+    ws.column_dimensions['B'].width = 15
+    ws.column_dimensions['C'].width = 25
+    ws.column_dimensions['D'].width = 15
+    
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"inventory_alerts_{datetime.utcnow().strftime('%Y%m%d')}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

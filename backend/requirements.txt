@@ -15,3 +15,8 @@ statsmodels
 bcrypt
 sentry-sdk[fastapi]==2.19.0
 prometheus-client==0.21.0
+# PDF/Excel Export
+reportlab==4.2.5
+openpyxl==3.1.5
+# Database migrations
+alembic==1.14.0
