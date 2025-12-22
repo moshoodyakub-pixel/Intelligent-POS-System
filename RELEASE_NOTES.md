@@ -35,7 +35,7 @@ This release introduces ARIMA-based sales forecasting, JWT authentication with r
 To tag and release this version:
 
 ```bash
-git tag -a v0.9.0 -m "release: v0.9.0 — ARIMA forecasting, auth, UI improvements"
+git tag -a v0.9.0 -m "release: v0.9.0 - ARIMA forecasting, auth, UI improvements"
 git push origin v0.9.0
 ```
 
