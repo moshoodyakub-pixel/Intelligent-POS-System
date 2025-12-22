@@ -21,8 +21,8 @@ describe('Products Component', () => {
   });
 
   test('displays products table header after loading', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
-    vendorsAPI.getAll.mockResolvedValue({ data: mockVendors });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts, pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: mockVendors } });
 
     render(<Products />);
 
@@ -32,8 +32,8 @@ describe('Products Component', () => {
   });
 
   test('displays products in table', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
-    vendorsAPI.getAll.mockResolvedValue({ data: mockVendors });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts, pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: mockVendors } });
 
     render(<Products />);
 
@@ -46,8 +46,8 @@ describe('Products Component', () => {
   });
 
   test('displays table headers correctly', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: [] });
-    vendorsAPI.getAll.mockResolvedValue({ data: [] });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Products />);
 
@@ -63,8 +63,8 @@ describe('Products Component', () => {
   });
 
   test('shows add product button', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: [] });
-    vendorsAPI.getAll.mockResolvedValue({ data: [] });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Products />);
 
@@ -74,8 +74,8 @@ describe('Products Component', () => {
   });
 
   test('opens form when Add Product button is clicked', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: [] });
-    vendorsAPI.getAll.mockResolvedValue({ data: [] });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Products />);
 
@@ -86,7 +86,7 @@ describe('Products Component', () => {
     fireEvent.click(screen.getByText('➕ Add Product'));
 
     await waitFor(() => {
-      expect(screen.getByText('Add New Product')).toBeInTheDocument();
+      expect(screen.getByText('➕ Add New Product')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Product Name')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Price')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Quantity')).toBeInTheDocument();
@@ -94,8 +94,8 @@ describe('Products Component', () => {
   });
 
   test('closes form when button is clicked again', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: [] });
-    vendorsAPI.getAll.mockResolvedValue({ data: [] });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Products />);
 
@@ -106,19 +106,19 @@ describe('Products Component', () => {
     // Open form
     fireEvent.click(screen.getByText('➕ Add Product'));
     await waitFor(() => {
-      expect(screen.getByText('Add New Product')).toBeInTheDocument();
+      expect(screen.getByText('➕ Add New Product')).toBeInTheDocument();
     });
 
     // Close form
     fireEvent.click(screen.getByText('✕ Close Form'));
     await waitFor(() => {
-      expect(screen.queryByText('Add New Product')).not.toBeInTheDocument();
+      expect(screen.queryByText('➕ Add New Product')).not.toBeInTheDocument();
     });
   });
 
   test('displays edit and delete buttons for each product', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
-    vendorsAPI.getAll.mockResolvedValue({ data: mockVendors });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts, pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: mockVendors } });
 
     render(<Products />);
 
@@ -137,13 +137,15 @@ describe('Products Component', () => {
     render(<Products />);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load products')).toBeInTheDocument();
+      // Component shows error in both notification and error div
+      const errorElements = screen.getAllByText('Failed to load products');
+      expect(errorElements.length).toBeGreaterThan(0);
     });
   });
 
   test('calls API endpoints on mount', async () => {
-    productsAPI.getAll.mockResolvedValue({ data: [] });
-    vendorsAPI.getAll.mockResolvedValue({ data: [] });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    vendorsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Products />);
 
