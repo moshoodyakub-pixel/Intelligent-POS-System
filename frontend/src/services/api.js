@@ -40,6 +40,18 @@ api.interceptors.response.use(
   }
 );
 
+// Helper function for file downloads with authentication
+const downloadFile = async (endpoint, queryParams = {}) => {
+  const token = localStorage.getItem('access_token');
+  const queryString = new URLSearchParams(queryParams).toString();
+  const url = queryString ? `${API_BASE_URL}${endpoint}?${queryString}` : `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.blob();
+};
+
 // Auth API
 export const authAPI = {
   login: async (username, password) => {
@@ -130,6 +142,9 @@ export const transactionsAPI = {
   update: (id, data) => api.put(`/transactions/${id}`, data),
   delete: (id) => api.delete(`/transactions/${id}`),
   getRecent: (days = 7, limit = 10) => api.get(`/transactions/recent?days=${days}&limit=${limit}`),
+  // Receipt generation
+  getReceiptData: (id) => api.get(`/transactions/${id}/receipt-data`),
+  downloadReceipt: (id) => downloadFile(`/transactions/${id}/receipt`),
 };
 
 // Forecasting API with ARIMA support
@@ -162,6 +177,19 @@ export const reportsAPI = {
   },
   getDashboardStats: (days = 7) => api.get(`/reports/dashboard-stats?days=${days}`),
   getProductAnalytics: (productId, days = 30) => api.get(`/reports/analytics/product/${productId}?days=${days}`),
+  // Export functions using the helper
+  exportSalesPDF: (days = 30, vendorId = null) => {
+    const params = { days };
+    if (vendorId) params.vendor_id = vendorId;
+    return downloadFile('/reports/export/sales/pdf', params);
+  },
+  exportSalesExcel: (days = 30, vendorId = null) => {
+    const params = { days };
+    if (vendorId) params.vendor_id = vendorId;
+    return downloadFile('/reports/export/sales/excel', params);
+  },
+  exportInventoryPDF: () => downloadFile('/reports/export/inventory/pdf'),
+  exportInventoryExcel: () => downloadFile('/reports/export/inventory/excel'),
 };
 
 export default api;

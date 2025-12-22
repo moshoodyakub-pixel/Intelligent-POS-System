@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { productsAPI, vendorsAPI, transactionsAPI, forecastingAPI, reportsAPI } from '../services/api';
 import './Dashboard.css';
 
@@ -16,18 +16,57 @@ export default function Dashboard() {
   const [notification, setNotification] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [lowStockAlerts, setLowStockAlerts] = useState([]);
-  const [revenueTrend, setRevenueTrend] = useState([]);
+  const [exporting, setExporting] = useState(null);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const showNotification = (message, type = 'info') => {
+  const showNotification = useCallback((message, type = 'info') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 5000);
+  }, []);
+
+  const handleExport = async (type, format) => {
+    try {
+      setExporting(`${type}-${format}`);
+      let blob;
+      let filename;
+      
+      if (type === 'sales') {
+        if (format === 'pdf') {
+          blob = await reportsAPI.exportSalesPDF(30);
+          filename = `sales_report_${new Date().toISOString().split('T')[0]}.pdf`;
+        } else {
+          blob = await reportsAPI.exportSalesExcel(30);
+          filename = `sales_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+        }
+      } else if (type === 'inventory') {
+        if (format === 'pdf') {
+          blob = await reportsAPI.exportInventoryPDF();
+          filename = `inventory_alerts_${new Date().toISOString().split('T')[0]}.pdf`;
+        } else {
+          blob = await reportsAPI.exportInventoryExcel();
+          filename = `inventory_alerts_${new Date().toISOString().split('T')[0]}.xlsx`;
+        }
+      }
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      showNotification(`${type} report exported successfully!`, 'success');
+    } catch (err) {
+      console.error('Export error:', err);
+      showNotification(`Failed to export ${type} report`, 'error');
+    } finally {
+      setExporting(null);
+    }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
       const [products, vendors, transactions, forecasts, dashboardStats, inventoryAlerts] = await Promise.all([
@@ -50,7 +89,6 @@ export default function Dashboard() {
 
       if (dashboardStats?.data) {
         setRecentTransactions(dashboardStats.data.recent_transactions || []);
-        setRevenueTrend(dashboardStats.data.revenue_trend || []);
       }
 
       if (inventoryAlerts?.data) {
@@ -70,7 +108,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   if (loading) {
     return (
@@ -106,6 +148,41 @@ export default function Dashboard() {
       )}
 
       <h1>📊 POS System Dashboard</h1>
+
+      {/* Export Buttons */}
+      <div className="export-section">
+        <h3>📥 Export Reports</h3>
+        <div className="export-buttons">
+          <button 
+            className="export-btn pdf" 
+            onClick={() => handleExport('sales', 'pdf')}
+            disabled={exporting}
+          >
+            {exporting === 'sales-pdf' ? '⏳ Exporting...' : '📄 Sales Report (PDF)'}
+          </button>
+          <button 
+            className="export-btn excel" 
+            onClick={() => handleExport('sales', 'excel')}
+            disabled={exporting}
+          >
+            {exporting === 'sales-excel' ? '⏳ Exporting...' : '📊 Sales Report (Excel)'}
+          </button>
+          <button 
+            className="export-btn pdf" 
+            onClick={() => handleExport('inventory', 'pdf')}
+            disabled={exporting}
+          >
+            {exporting === 'inventory-pdf' ? '⏳ Exporting...' : '📄 Inventory Alerts (PDF)'}
+          </button>
+          <button 
+            className="export-btn excel" 
+            onClick={() => handleExport('inventory', 'excel')}
+            disabled={exporting}
+          >
+            {exporting === 'inventory-excel' ? '⏳ Exporting...' : '📊 Inventory Alerts (Excel)'}
+          </button>
+        </div>
+      </div>
 
       <div className="stats-grid">
         <div className="stat-card products">
