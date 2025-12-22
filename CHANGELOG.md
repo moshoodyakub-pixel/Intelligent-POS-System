@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **CI/CD Workflow**: Fixed incorrect secret checking syntax in `staging-deploy.yml` workflow
+- **Frontend Dependencies**: Updated `package-lock.json` to resolve `npm ci` failures due to missing dependencies
+- **CI Triggers**: Added push trigger to main branch for CI workflow to ensure tests run on direct pushes
+
 ## [0.9.0] - 2025-12-22
 
 ### Added
