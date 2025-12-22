@@ -58,10 +58,9 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "/node_modules/(?!react-router-dom)/"
+      "/node_modules/(?!(react-router-dom|react-router|@remix-run)/)/"
     ],
     "moduleNameMapper": {
-      "^react-router-dom$": "<rootDir>/__mocks__/react-router-dom.js",
       "\\\\.(css|less|scss|sass)$": "identity-obj-proxy",
       "\\\\.(svg)$": "<rootDir>/__mocks__/fileMock.js"
     }

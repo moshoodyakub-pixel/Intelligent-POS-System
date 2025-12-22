@@ -6,11 +6,10 @@ module.exports = {
   transform: {
     '^.+\\.[tj]sx?$': 'babel-jest'
   },
-  // If you have other ESM deps you need to transpile, add them to this whitelist
-  transformIgnorePatterns: ['/node_modules/(?!(react-router-dom)/)'],
-  // Map react-router-dom to the local mock so module resolution never fails
+  // Transpile react-router-dom and other ESM dependencies via babel-jest
+  transformIgnorePatterns: ['/node_modules/(?!(react-router-dom|react-router|@remix-run)/)'],
+  // Use real react-router-dom with babel-jest transform (no mock mapping needed)
   moduleNameMapper: {
-    '^react-router-dom$': '<rootDir>/__mocks__/react-router-dom.js',
     '^@sentry/react$': '<rootDir>/__mocks__/@sentry/react.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(svg)$': '<rootDir>/__mocks__/fileMock.js'
