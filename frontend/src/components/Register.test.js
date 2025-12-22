@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import Register from './Register';
 import { AuthProvider } from '../contexts/AuthContext';
 import { authAPI } from '../services/api';
@@ -31,11 +31,11 @@ Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 const renderRegister = () => {
   return render(
-    <BrowserRouter>
+    <MemoryRouter>
       <AuthProvider>
         <Register />
       </AuthProvider>
-    </BrowserRouter>
+    </MemoryRouter>
   );
 };
 

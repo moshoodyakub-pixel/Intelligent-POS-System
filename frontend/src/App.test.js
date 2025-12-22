@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import Login from './components/Login';
 import Register from './components/Register';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock axios with proper axios.create implementation
 jest.mock('axios', () => {
@@ -57,9 +57,9 @@ describe('Authentication Pages', () => {
 
   test('Login page renders with form fields', () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <Login />
-      </BrowserRouter>
+      </MemoryRouter>
     );
     
     expect(screen.getByRole('heading', { name: /Sign In/i })).toBeInTheDocument();
@@ -70,9 +70,9 @@ describe('Authentication Pages', () => {
 
   test('Register page renders with form fields', () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter>
         <Register />
-      </BrowserRouter>
+      </MemoryRouter>
     );
     
     expect(screen.getByRole('heading', { name: /Create Account/i })).toBeInTheDocument();
