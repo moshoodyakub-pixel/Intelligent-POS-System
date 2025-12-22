@@ -8,6 +8,10 @@ on:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: sqlite:///:memory:
+      SECRET_KEY: test-secret-key-for-ci
+      PYTHONPATH: ${{ github.workspace }}/backend
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,7 +25,8 @@ jobs:
         run: pip install -r backend/requirements.txt
 
       - name: Run backend tests
-        run: cd backend && PYTHONPATH=. pytest app/tests/ -v
+        working-directory: ./backend
+        run: PYTHONPATH=. pytest app/tests/ -v
 
   test-frontend:
     runs-on: ubuntu-latest
@@ -35,11 +40,13 @@ jobs:
           node-version: '18'
 
       - name: Install frontend dependencies
-        run: npm ci --prefix frontend
+        working-directory: ./frontend
+        run: npm ci
 
       - name: Run frontend tests
+        working-directory: ./frontend
         timeout-minutes: 10
-        run: npm test --prefix frontend -- --watchAll=false
+        run: npm test -- --watchAll=false
 
   build-docker:
     runs-on: ubuntu-latest

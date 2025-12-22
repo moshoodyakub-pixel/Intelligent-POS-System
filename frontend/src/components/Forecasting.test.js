@@ -20,8 +20,8 @@ describe('Forecasting Component', () => {
   });
 
   test('displays forecasting page title after loading', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: mockForecasts });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: mockForecasts, pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
@@ -31,61 +31,61 @@ describe('Forecasting Component', () => {
   });
 
   test('shows new forecast button', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: [] });
-    productsAPI.getAll.mockResolvedValue({ data: [] });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Forecasting />);
 
     await waitFor(() => {
-      expect(screen.getByText('➕ New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Manual Forecast')).toBeInTheDocument();
     });
   });
 
   test('opens form when New Forecast button is clicked', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: [] });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
     await waitFor(() => {
-      expect(screen.getByText('➕ New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Manual Forecast')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('➕ New Forecast'));
+    fireEvent.click(screen.getByText('➕ Manual Forecast'));
 
     await waitFor(() => {
-      expect(screen.getByText('Create New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Create Manual Forecast')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Forecasted Quantity')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Forecasted Price')).toBeInTheDocument();
     });
   });
 
   test('closes form when button is clicked again', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: [] });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
     await waitFor(() => {
-      expect(screen.getByText('➕ New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Manual Forecast')).toBeInTheDocument();
     });
 
     // Open form
-    fireEvent.click(screen.getByText('➕ New Forecast'));
+    fireEvent.click(screen.getByText('➕ Manual Forecast'));
     await waitFor(() => {
-      expect(screen.getByText('Create New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Create Manual Forecast')).toBeInTheDocument();
     });
 
-    // Close form
-    fireEvent.click(screen.getByText('✕ Close Form'));
+    // Close form - when form is open, button shows "✕ Close"
+    fireEvent.click(screen.getByText('✕ Close'));
     await waitFor(() => {
-      expect(screen.queryByText('Create New Forecast')).not.toBeInTheDocument();
+      expect(screen.queryByText('➕ Create Manual Forecast')).not.toBeInTheDocument();
     });
   });
 
   test('displays forecast cards when data exists', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: mockForecasts });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: mockForecasts, pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
@@ -96,8 +96,8 @@ describe('Forecasting Component', () => {
   });
 
   test('displays forecasted quantity and price', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: mockForecasts });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: mockForecasts, pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
@@ -108,13 +108,13 @@ describe('Forecasting Component', () => {
   });
 
   test('displays delete button for each forecast', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: mockForecasts });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: mockForecasts, pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
     await waitFor(() => {
-      const deleteButtons = screen.getAllByText('Delete');
+      const deleteButtons = screen.getAllByText('🗑️ Delete');
       expect(deleteButtons).toHaveLength(2);
     });
   });
@@ -126,13 +126,15 @@ describe('Forecasting Component', () => {
     render(<Forecasting />);
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load forecasts')).toBeInTheDocument();
+      // Component shows error in both notification and error div
+      const errorElements = screen.getAllByText('Failed to load forecasts');
+      expect(errorElements.length).toBeGreaterThan(0);
     });
   });
 
   test('calls API endpoints on mount', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: [] });
-    productsAPI.getAll.mockResolvedValue({ data: [] });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: [] } });
 
     render(<Forecasting />);
 
@@ -143,16 +145,16 @@ describe('Forecasting Component', () => {
   });
 
   test('displays product dropdown in form', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: [] });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
     await waitFor(() => {
-      expect(screen.getByText('➕ New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Manual Forecast')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('➕ New Forecast'));
+    fireEvent.click(screen.getByText('➕ Manual Forecast'));
 
     await waitFor(() => {
       expect(screen.getByText('Select Product')).toBeInTheDocument();
@@ -162,19 +164,19 @@ describe('Forecasting Component', () => {
   });
 
   test('form has create forecast button', async () => {
-    forecastingAPI.getAll.mockResolvedValue({ data: [] });
-    productsAPI.getAll.mockResolvedValue({ data: mockProducts });
+    forecastingAPI.getAll.mockResolvedValue({ data: { items: [], pagination: {} } });
+    productsAPI.getAll.mockResolvedValue({ data: { items: mockProducts } });
 
     render(<Forecasting />);
 
     await waitFor(() => {
-      expect(screen.getByText('➕ New Forecast')).toBeInTheDocument();
+      expect(screen.getByText('➕ Manual Forecast')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('➕ New Forecast'));
+    fireEvent.click(screen.getByText('➕ Manual Forecast'));
 
     await waitFor(() => {
-      expect(screen.getByText('Create Forecast')).toBeInTheDocument();
+      expect(screen.getByText('✅ Create Forecast')).toBeInTheDocument();
     });
   });
 });
