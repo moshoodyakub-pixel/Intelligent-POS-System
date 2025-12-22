@@ -20,13 +20,10 @@ test.describe('Critical Flow Tests - Products', () => {
     const addButton = page.getByRole('button', { name: /add|new|create/i });
     
     // Button may or may not be visible depending on auth state
-    const isVisible = await addButton.isVisible().catch(() => false);
+    await addButton.isVisible().catch(() => false);
     
-    // Log the result for debugging
-    console.log('Add product button visible:', isVisible);
-    
-    // Either the button exists or we're redirected (auth required)
-    expect(true).toBe(true); // Smoke test passes if page loads
+    // Smoke test passes if page loads
+    expect(true).toBe(true);
   });
 
   test('Products API returns valid response', async ({ request }) => {
@@ -58,9 +55,8 @@ test.describe('Critical Flow Tests - Vendors', () => {
     await page.waitForLoadState('networkidle');
     
     const addButton = page.getByRole('button', { name: /add|new|create/i });
-    const isVisible = await addButton.isVisible().catch(() => false);
+    await addButton.isVisible().catch(() => false);
     
-    console.log('Add vendor button visible:', isVisible);
     expect(true).toBe(true);
   });
 
@@ -91,9 +87,8 @@ test.describe('Critical Flow Tests - Transactions', () => {
     await page.waitForLoadState('networkidle');
     
     const addButton = page.getByRole('button', { name: /add|new|create/i });
-    const isVisible = await addButton.isVisible().catch(() => false);
+    await addButton.isVisible().catch(() => false);
     
-    console.log('Add transaction button visible:', isVisible);
     expect(true).toBe(true);
   });
 

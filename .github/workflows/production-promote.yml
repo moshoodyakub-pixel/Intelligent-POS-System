@@ -127,6 +127,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: approve-promotion
     steps:
+      - name: Validate Docker Hub credentials
+        run: |
+          if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] || [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+            echo "❌ Error: DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets must be configured"
+            echo "Please add these secrets in your repository settings to enable production promotion."
+            exit 1
+          fi
+          echo "✅ Docker Hub credentials are configured"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
