@@ -4,6 +4,10 @@
 
 This document provides a step-by-step checklist for deploying the Intelligent POS System to production. Complete each section in order.
 
+> 📖 **Related Documentation:**
+> - [DEPLOYMENT.md](./DEPLOYMENT.md) - Detailed verification guide, monitoring setup, and rollback procedures
+> - [docs/STAGING_DEPLOYMENT.md](./docs/STAGING_DEPLOYMENT.md) - Staging environment specifics
+
 ---
 
 ## 📋 Pre-Deployment Checklist
@@ -135,6 +139,7 @@ docker compose -f docker-compose.staging.yml up -d --wait
 ```
 
 **Staging Verification:**
+- [ ] Ensure scripts are executable: `chmod +x scripts/*.sh`
 - [ ] Run smoke tests: `./scripts/smoke-tests.sh`
 - [ ] Check backend logs: `docker logs pos-backend-staging`
 - [ ] Check frontend logs: `docker logs pos-frontend-staging`
