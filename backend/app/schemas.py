@@ -26,7 +26,9 @@ class PaginatedResponse(BaseModel, Generic[T]):
 # User Role Enum
 class UserRole(str, Enum):
     ADMIN = "admin"
-    STAFF = "staff"
+    VENDOR = "vendor"
+    CASHIER = "cashier"
+    STAFF = "staff"  # Keep for backwards compatibility
 
 
 # Authentication Schemas
@@ -48,7 +50,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    role: Optional[UserRole] = UserRole.STAFF
+    role: Optional[UserRole] = UserRole.CASHIER
 
 
 class UserUpdate(BaseModel):

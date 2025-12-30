@@ -9,7 +9,9 @@ Base = declarative_base()
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
-    STAFF = "staff"
+    VENDOR = "vendor"
+    CASHIER = "cashier"
+    STAFF = "staff"  # Keep for backwards compatibility
 
 
 class User(Base):
@@ -20,7 +22,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String)
-    role = Column(String, default=UserRole.STAFF.value)
+    role = Column(String, default=UserRole.CASHIER.value)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

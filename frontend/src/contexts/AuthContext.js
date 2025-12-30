@@ -107,8 +107,30 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Role hierarchy: admin > vendor > cashier > staff
+  const ROLE_HIERARCHY = {
+    admin: ['admin', 'vendor', 'cashier', 'staff'],
+    vendor: ['vendor', 'cashier', 'staff'],
+    cashier: ['cashier', 'staff'],
+    staff: ['staff']
+  };
+
   const isAdmin = () => {
     return user?.role === 'admin';
+  };
+
+  const isVendor = () => {
+    const allowedRoles = ROLE_HIERARCHY.vendor || [];
+    return allowedRoles.includes(user?.role);
+  };
+
+  const isCashier = () => {
+    const allowedRoles = ROLE_HIERARCHY.cashier || [];
+    return allowedRoles.includes(user?.role);
+  };
+
+  const hasRole = (allowedRoles) => {
+    return allowedRoles.includes(user?.role);
   };
 
   const isAuthenticated = () => {
@@ -124,6 +146,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     isAdmin,
+    isVendor,
+    isCashier,
+    hasRole,
     isAuthenticated,
   };
 

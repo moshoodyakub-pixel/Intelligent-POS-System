@@ -15,7 +15,7 @@ class TestAuthRegistration:
         assert data["username"] == sample_user_data["username"]
         assert data["email"] == sample_user_data["email"]
         assert data["full_name"] == sample_user_data["full_name"]
-        assert data["role"] == "staff"  # Default role
+        assert data["role"] == "cashier"  # Default role is now cashier
         assert data["is_active"] == True
         assert "id" in data
         assert "created_at" in data
@@ -29,6 +29,20 @@ class TestAuthRegistration:
         assert response.status_code == 200
         data = response.json()
         assert data["role"] == "admin"
+
+    def test_register_vendor_user(self, client, sample_vendor_user_data):
+        """Test registering a vendor user."""
+        response = client.post("/api/auth/register", json=sample_vendor_user_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["role"] == "vendor"
+
+    def test_register_cashier_user(self, client, sample_cashier_user_data):
+        """Test registering a cashier user."""
+        response = client.post("/api/auth/register", json=sample_cashier_user_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["role"] == "cashier"
 
     def test_register_duplicate_username(self, client, sample_user_data):
         """Test registration fails with duplicate username."""

@@ -118,4 +118,7 @@ def require_role(required_roles: list):
 
 # Convenience dependencies for role-based access
 require_admin = require_role(["admin"])
+require_vendor = require_role(["admin", "vendor"])
+require_cashier = require_role(["admin", "vendor", "cashier"])
 require_staff_or_admin = require_role(["admin", "staff"])
+require_any_authenticated = require_role(["admin", "vendor", "cashier", "staff"])

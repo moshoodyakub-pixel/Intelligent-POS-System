@@ -60,8 +60,19 @@ function ErrorFallback({ error, resetError }) {
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, isVendor } = useAuth();
   const { toggleTheme, isDark } = useTheme();
+
+  // Get role badge text
+  const getRoleBadge = () => {
+    switch (user?.role) {
+      case 'admin': return 'Admin';
+      case 'vendor': return 'Vendor';
+      case 'cashier': return 'Cashier';
+      case 'staff': return 'Staff';
+      default: return null;
+    }
+  };
 
   // If not authenticated, show login/register routes only
   if (!isAuthenticated()) {
@@ -101,24 +112,30 @@ function AppContent() {
               <span className="label">Products</span>
             </Link>
           </li>
-          <li>
-            <Link to="/vendors" className="nav-link">
-              <span className="icon">🏢</span>
-              <span className="label">Vendors</span>
-            </Link>
-          </li>
+          {/* Vendors - only visible to Admin and Vendor roles */}
+          {isVendor() && (
+            <li>
+              <Link to="/vendors" className="nav-link">
+                <span className="icon">🏢</span>
+                <span className="label">Vendors</span>
+              </Link>
+            </li>
+          )}
           <li>
             <Link to="/transactions" className="nav-link">
               <span className="icon">💰</span>
               <span className="label">Transactions</span>
             </Link>
           </li>
-          <li>
-            <Link to="/forecasting" className="nav-link">
-              <span className="icon">📈</span>
-              <span className="label">Forecasting</span>
-            </Link>
-          </li>
+          {/* Forecasting - only visible to Admin and Vendor roles */}
+          {isVendor() && (
+            <li>
+              <Link to="/forecasting" className="nav-link">
+                <span className="icon">📈</span>
+                <span className="label">Forecasting</span>
+              </Link>
+            </li>
+          )}
         </ul>
 
         <div className="sidebar-footer">
@@ -141,7 +158,7 @@ function AppContent() {
             </button>
             <span className="user-info">
               {user?.full_name || user?.username}
-              {user?.role === 'admin' && <span className="role-badge">Admin</span>}
+              {getRoleBadge() && <span className={`role-badge role-${user?.role}`}>{getRoleBadge()}</span>}
             </span>
             <button className="logout-btn" onClick={logout}>
               Logout
@@ -162,7 +179,7 @@ function AppContent() {
               </ProtectedRoute>
             } />
             <Route path="/vendors" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'vendor']}>
                 <Vendors />
               </ProtectedRoute>
             } />
@@ -172,7 +189,7 @@ function AppContent() {
               </ProtectedRoute>
             } />
             <Route path="/forecasting" element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['admin', 'vendor']}>
                 <Forecasting />
               </ProtectedRoute>
             } />
