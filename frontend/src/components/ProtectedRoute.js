@@ -20,12 +20,10 @@ export default function ProtectedRoute({ children, requireAdmin = false, allowed
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && user.role !== 'admin') {
-    // User is not an admin, redirect to home
-    return <Navigate to="/" replace />;
-  }
+  // Compute effective allowed roles: use allowedRoles if provided, or ['admin'] if requireAdmin is true
+  const effectiveRoles = allowedRoles || (requireAdmin ? ['admin'] : null);
 
-  if (allowedRoles && !hasRole(allowedRoles)) {
+  if (effectiveRoles && !hasRole(effectiveRoles)) {
     // User doesn't have required role, redirect to home
     return <Navigate to="/" replace />;
   }
