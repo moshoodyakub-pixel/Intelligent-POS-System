@@ -153,6 +153,23 @@ body {
   font-weight: 600;
 }
 
+/* Role-specific badge colors */
+.role-badge.role-admin {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+}
+
+.role-badge.role-vendor {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+}
+
+.role-badge.role-cashier {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+}
+
+.role-badge.role-staff {
+  background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+}
+
 .logout-btn {
   background: var(--color-error);
   color: white;

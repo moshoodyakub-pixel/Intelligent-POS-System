@@ -134,6 +134,30 @@ def sample_admin_data():
 
 
 @pytest.fixture
+def sample_vendor_user_data():
+    """Sample vendor user data for testing."""
+    return {
+        "username": "vendoruser",
+        "email": "vendor@example.com",
+        "password": "vendorpassword123",
+        "full_name": "Vendor User",
+        "role": "vendor"
+    }
+
+
+@pytest.fixture
+def sample_cashier_user_data():
+    """Sample cashier user data for testing."""
+    return {
+        "username": "cashieruser",
+        "email": "cashier@example.com",
+        "password": "cashierpassword123",
+        "full_name": "Cashier User",
+        "role": "cashier"
+    }
+
+
+@pytest.fixture
 def created_vendor(client, sample_vendor_data):
     """Create a vendor and return the response data."""
     response = client.post("/api/vendors/", json=sample_vendor_data)
@@ -185,6 +209,34 @@ def admin_auth_headers(client, sample_admin_data):
     response = client.post(
         "/api/auth/login",
         data={"username": sample_admin_data["username"], "password": sample_admin_data["password"]}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def vendor_auth_headers(client, sample_vendor_user_data):
+    """Get authentication headers for a vendor user."""
+    # Register vendor first
+    client.post("/api/auth/register", json=sample_vendor_user_data)
+    # Login and get token
+    response = client.post(
+        "/api/auth/login",
+        data={"username": sample_vendor_user_data["username"], "password": sample_vendor_user_data["password"]}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def cashier_auth_headers(client, sample_cashier_user_data):
+    """Get authentication headers for a cashier user."""
+    # Register cashier first
+    client.post("/api/auth/register", json=sample_cashier_user_data)
+    # Login and get token
+    response = client.post(
+        "/api/auth/login",
+        data={"username": sample_cashier_user_data["username"], "password": sample_cashier_user_data["password"]}
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

@@ -111,6 +111,18 @@ export const AuthProvider = ({ children }) => {
     return user?.role === 'admin';
   };
 
+  const isVendor = () => {
+    return user?.role === 'vendor' || user?.role === 'admin';
+  };
+
+  const isCashier = () => {
+    return user?.role === 'cashier' || user?.role === 'vendor' || user?.role === 'admin';
+  };
+
+  const hasRole = (allowedRoles) => {
+    return allowedRoles.includes(user?.role);
+  };
+
   const isAuthenticated = () => {
     return !!user;
   };
@@ -124,6 +136,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     isAdmin,
+    isVendor,
+    isCashier,
+    hasRole,
     isAuthenticated,
   };
 

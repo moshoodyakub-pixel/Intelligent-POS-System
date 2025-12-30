@@ -49,7 +49,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         full_name=user.full_name,
         hashed_password=hashed_password,
-        role=user.role.value if user.role else "staff"
+        role=user.role.value if user.role else "cashier"
     )
     db.add(db_user)
     db.commit()
