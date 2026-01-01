@@ -1,8 +1,9 @@
 import os
+import json
 import logging
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
-from .database import engine, Base
+from .database import engine, Base, check_database_connection
 from .models import Product, Vendor, Transaction, SalesForecast, User
 from .routes import products, vendors, transactions, forecasting, auth, reports
 from .middleware import RateLimitMiddleware, ErrorHandlingMiddleware, RequestLoggingMiddleware
@@ -95,12 +96,23 @@ def read_root():
 
 @app.get("/health")
 def health_check():
-    return {
-        "status": "healthy",
+    db_healthy = check_database_connection()
+    status = "healthy" if db_healthy else "unhealthy"
+    status_code = 200 if db_healthy else 503
+    
+    response_data = {
+        "status": status,
         "message": "API is running",
         "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "database": "connected" if db_healthy else "disconnected"
     }
+    
+    return Response(
+        content=json.dumps(response_data),
+        status_code=status_code,
+        media_type="application/json"
+    )
 
 @app.get("/metrics")
 def metrics_endpoint():
