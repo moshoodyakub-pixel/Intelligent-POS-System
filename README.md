@@ -275,7 +275,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📧 Support
 
-For support, email moshoodyakub@example.com or open an issue on GitHub.
+For support, email moshoodyakub@miva.edu.ng or open an issue on GitHub.
 
 ## 🙏 Acknowledgments
 
